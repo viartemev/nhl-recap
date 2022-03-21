@@ -26,14 +26,13 @@ func main() {
 
 	for _, game := range finishedGames {
 		wg.Add(1)
-		game := game
-		go func() {
+		go func(game Games) {
 			gameInfo := fetchGameInfo(game.GamePk)
 			video := extractGameVideo(gameInfo)
 			title := fmt.Sprintf("%v vs %v", game.Teams.Home.Team.Name, game.Teams.Away.Team.Name)
 			gamesVideos[game.GamePk] = &GameInfo{title, video}
 			defer wg.Done()
-		}()
+		}(game)
 	}
 	wg.Wait()
 	for _, info := range gamesVideos {
