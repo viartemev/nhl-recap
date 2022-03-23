@@ -67,7 +67,7 @@ func extractGameVideo(game Game) (video string) {
 	return
 }
 
-func httpGet[E any](url string) E {
+func httpGet(url string) (E interface{}) {
 	client := http.Client{
 		Timeout: time.Second * 2,
 	}
@@ -92,12 +92,12 @@ func httpGet[E any](url string) E {
 		log.Fatal(readErr)
 	}
 
-	result := new(E)
+	result := E
 	jsonErr := json.Unmarshal(body, &result)
 	if jsonErr != nil {
 		log.Fatal(jsonErr)
 	}
-	return *result
+	return result
 }
 
 type Game struct {
