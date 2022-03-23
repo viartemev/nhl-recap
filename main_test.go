@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"example/domain"
 	"fmt"
 	"log"
 	"os"
@@ -10,7 +11,7 @@ import (
 
 func TestGamesUnmarshalling(t *testing.T) {
 	dat, _ := os.ReadFile("game.json")
-	game := &Game{}
+	game := &domain.Game{}
 	jsonErr := json.Unmarshal(dat, &game)
 	if jsonErr != nil {
 		log.Fatalln(jsonErr)
@@ -20,7 +21,7 @@ func TestGamesUnmarshalling(t *testing.T) {
 
 func TestScheduleUnmarshalling(t *testing.T) {
 	dat, _ := os.ReadFile("schedule.json")
-	schedule := &Schedule{}
+	schedule := &domain.Schedule{}
 	jsonErr := json.Unmarshal(dat, &schedule)
 	if jsonErr != nil {
 		log.Fatalln(jsonErr)
