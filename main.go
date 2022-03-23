@@ -21,15 +21,15 @@ func main() {
 	start := time.Now()
 	var wg sync.WaitGroup
 	gamesVideos := make(map[int]*GameInfo)
-	schedule := fetchSchedule()
+	schedule := httpGet[Schedule]("https://statsapi.web.nhl.com/api/v1/schedule")
 	finishedGames := filterFinishedGames(schedule)
 
 	for _, game := range finishedGames {
 		wg.Add(1)
 		go func(game Games) {
-			gameInfo := fetchGameInfo(game.GamePk)
+			gameInfo := httpGet[Game]("https://statsapi.web.nhl.com/api/v1/game/" + fmt.Sprintf("%v", game.GamePk) + "/content")
 			video := extractGameVideo(gameInfo)
-			title := fmt.Sprintf("%v vs %v", game.Teams.Home.Team.Name, game.Teams.Away.Team.Name)
+			title := fmt.Sprintf("%v vs %v: %v - %v", game.Teams.Home.Team.Name, game.Teams.Away.Team.Name, game.Teams.Home.Score, game.Teams.Away.Score)
 			gamesVideos[game.GamePk] = &GameInfo{title, video}
 			defer wg.Done()
 		}(game)
@@ -67,11 +67,10 @@ func extractGameVideo(game Game) (video string) {
 	return
 }
 
-func fetchGameInfo(gamePk int) Game {
+func httpGet[E any](url string) E {
 	client := http.Client{
 		Timeout: time.Second * 2,
 	}
-	url := "https://statsapi.web.nhl.com/api/v1/game/" + fmt.Sprintf("%v", gamePk) + "/content"
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		log.Fatal(err)
@@ -93,12 +92,12 @@ func fetchGameInfo(gamePk int) Game {
 		log.Fatal(readErr)
 	}
 
-	game := &Game{}
-	jsonErr := json.Unmarshal(body, &game)
+	result := new(E)
+	jsonErr := json.Unmarshal(body, &result)
 	if jsonErr != nil {
 		log.Fatal(jsonErr)
 	}
-	return *game
+	return *result
 }
 
 type Game struct {
@@ -114,39 +113,6 @@ type Game struct {
 			}
 		}
 	}
-}
-
-func fetchSchedule() Schedule {
-	client := http.Client{
-		Timeout: time.Second * 2,
-	}
-	url := "https://statsapi.web.nhl.com/api/v1/schedule"
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-	res, getErr := client.Do(req)
-	if getErr != nil {
-		log.Fatal(getErr)
-	}
-	if res.Body != nil {
-		defer func(Body io.ReadCloser) {
-			err := Body.Close()
-			if err != nil {
-				log.Fatal(err)
-			}
-		}(res.Body)
-	}
-	body, readErr := ioutil.ReadAll(res.Body)
-	if readErr != nil {
-		log.Fatal(readErr)
-	}
-	schedule := &Schedule{}
-	jsonErr := json.Unmarshal(body, &schedule)
-	if jsonErr != nil {
-		log.Fatal(jsonErr)
-	}
-	return *schedule
 }
 
 type Schedule struct {
@@ -166,10 +132,12 @@ type Games struct {
 
 type Teams struct {
 	Away struct {
-		Team Team
+		Team  Team
+		Score int `json:"score"`
 	} `json:"away"`
 	Home struct {
-		Team Team
+		Team  Team
+		Score int `json:"score"`
 	} `json:"home"`
 }
 
