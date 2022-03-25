@@ -1,27 +1,16 @@
-package main
+package domain
 
 import (
 	"encoding/json"
-	"example/domain"
 	"fmt"
 	"log"
 	"os"
 	"testing"
 )
 
-func TestGamesUnmarshalling(t *testing.T) {
-	dat, _ := os.ReadFile("game.json")
-	game := &domain.Game{}
-	jsonErr := json.Unmarshal(dat, &game)
-	if jsonErr != nil {
-		log.Fatalln(jsonErr)
-	}
-	fmt.Println(game.Link)
-}
-
 func TestScheduleUnmarshalling(t *testing.T) {
-	dat, _ := os.ReadFile("schedule.json")
-	schedule := &domain.Schedule{}
+	dat, _ := os.ReadFile("example_schedule.json")
+	schedule := &Schedule{}
 	jsonErr := json.Unmarshal(dat, &schedule)
 	if jsonErr != nil {
 		log.Fatalln(jsonErr)

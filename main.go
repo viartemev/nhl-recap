@@ -15,21 +15,28 @@ type GameInfo struct {
 }
 
 func main() {
+	//scheduler := gocron.NewScheduler(time.UTC)
+	//_, _ = scheduler.Every(5).Seconds().Do(fetchGames)
+	//scheduler.StartBlocking()
+	fetchGames()
+}
+
+func fetchGames() {
 	start := time.Now()
 	var wg sync.WaitGroup
 	gamesVideos := make(map[int]*GameInfo)
 	schedule := httpGet[domain.Schedule]("https://statsapi.web.nhl.com/api/v1/schedule")
 	finishedGames := filterFinishedGames(schedule)
 
-	for _, game := range finishedGames {
+	for _, games := range finishedGames {
 		wg.Add(1)
-		go func(game domain.Games) {
-			gameInfo := httpGet[domain.Game]("https://statsapi.web.nhl.com/api/v1/game/" + fmt.Sprintf("%v", game.GamePk) + "/content")
+		go func(games domain.Games) {
+			gameInfo := httpGet[domain.Game]("https://statsapi.web.nhl.com/api/v1/games/" + fmt.Sprintf("%v", games.GamePk) + "/content")
 			video := extractGameVideo(gameInfo)
-			title := fmt.Sprintf("%v vs %v: %v - %v", game.Teams.Home.Team.Name, game.Teams.Away.Team.Name, game.Teams.Home.Score, game.Teams.Away.Score)
-			gamesVideos[game.GamePk] = &GameInfo{title, video}
+			title := fmt.Sprintf("%v vs %v: %v - %v", games.Teams.Home.Team.Name, games.Teams.Away.Team.Name, games.Teams.Home.Score, games.Teams.Away.Score)
+			gamesVideos[games.GamePk] = &GameInfo{title, video}
 			defer wg.Done()
-		}(game)
+		}(games)
 	}
 	wg.Wait()
 	for _, info := range gamesVideos {
