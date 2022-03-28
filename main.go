@@ -31,7 +31,7 @@ func fetchGames() {
 	for _, games := range finishedGames {
 		wg.Add(1)
 		go func(games domain.Games) {
-			gameInfo := httpGet[domain.Game]("https://statsapi.web.nhl.com/api/v1/games/" + fmt.Sprintf("%v", games.GamePk) + "/content")
+			gameInfo := httpGet[domain.Game]("https://statsapi.web.nhl.com/api/v1/game/" + fmt.Sprintf("%v", games.GamePk) + "/content")
 			video := extractGameVideo(gameInfo)
 			title := fmt.Sprintf("%v vs %v: %v - %v", games.Teams.Home.Team.Name, games.Teams.Away.Team.Name, games.Teams.Home.Score, games.Teams.Away.Score)
 			gamesVideos[games.GamePk] = &GameInfo{title, video}
