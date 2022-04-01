@@ -1,4 +1,4 @@
-package main
+package client
 
 import (
 	"encoding/json"
@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func httpGet[E any](url string) E {
+func HttpGet[E any](url string) E {
 	client := http.Client{
 		Timeout: time.Second * 2,
 	}
