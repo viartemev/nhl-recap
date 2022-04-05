@@ -1,49 +1,69 @@
 package main
 
 import (
+	"bytes"
 	"example/client"
 	"example/domain"
 	"fmt"
+	tele "gopkg.in/telebot.v3"
 	"log"
+	"os"
 	"strings"
 	"sync"
 	"time"
 )
+
+func main() {
+	pref := tele.Settings{
+		Token:  os.Getenv("TOKEN"),
+		Poller: &tele.LongPoller{Timeout: 10 * time.Second},
+	}
+
+	b, err := tele.NewBot(pref)
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+
+	r := b.NewMarkup()
+	b.Handle("/games", func(c tele.Context) error {
+		return c.Send(fetchGames(), &tele.SendOptions{ParseMode: tele.ModeMarkdown})
+	})
+
+	b.Start()
+}
 
 type GameInfo struct {
 	Title string
 	Video string
 }
 
-func main() {
-	//scheduler := gocron.NewScheduler(time.UTC)
-	//_, _ = scheduler.Every(5).Seconds().Do(fetchGames)
-	//scheduler.StartBlocking()
-	fetchGames()
-}
-
-func fetchGames() {
-	start := time.Now()
+func fetchGames() string {
 	var wg sync.WaitGroup
 	gamesVideos := make(map[int]*GameInfo)
 	schedule := client.HttpGet[domain.Schedule]("https://statsapi.web.nhl.com/api/v1/schedule")
 	finishedGames := filterFinishedGames(schedule)
-
+	if len(finishedGames) == 0 {
+		return "There are no finished games"
+	}
 	for _, games := range finishedGames {
 		wg.Add(1)
 		go func(games domain.Games) {
 			gameInfo := client.HttpGet[domain.Game]("https://statsapi.web.nhl.com/api/v1/game/" + fmt.Sprintf("%v", games.GamePk) + "/content")
 			video := extractGameVideo(gameInfo)
-			title := fmt.Sprintf("%v vs %v: %v - %v", games.Teams.Home.Team.Name, games.Teams.Away.Team.Name, games.Teams.Home.Score, games.Teams.Away.Score)
+			title := fmt.Sprintf("*%v vs %v*\n🥅🏒 %v - %v ", games.Teams.Home.Team.Name, games.Teams.Away.Team.Name, games.Teams.Home.Score, games.Teams.Away.Score)
 			gamesVideos[games.GamePk] = &GameInfo{title, video}
 			defer wg.Done()
 		}(games)
 	}
 	wg.Wait()
+
+	var buffer bytes.Buffer
 	for _, info := range gamesVideos {
-		fmt.Printf("Game %v %v\n", info.Title, info.Video)
+		//fmt.Printf("[%v](%v)\n", info.Title, info.Video)
+		buffer.WriteString(fmt.Sprintf("%v[Recap](%v)\n", info.Title, info.Video))
 	}
-	log.Printf("Operations took %s", time.Since(start))
+	return buffer.String()
 }
 
 func filterFinishedGames(schedule domain.Schedule) (finishedGames []domain.Games) {
