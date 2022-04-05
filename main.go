@@ -24,8 +24,6 @@ func main() {
 		log.Fatal(err)
 		return
 	}
-
-	r := b.NewMarkup()
 	b.Handle("/games", func(c tele.Context) error {
 		return c.Send(fetchGames(), &tele.SendOptions{ParseMode: tele.ModeMarkdown})
 	})
