@@ -1,10 +1,12 @@
 package domain
 
 type Schedule struct {
-	Dates []struct {
-		Date  string `json:"date"`
-		Games []Games
-	}
+	Dates []DateGames
+}
+
+type DateGames struct {
+	Date  string `json:"date"`
+	Games []Games
 }
 
 type Games struct {
@@ -16,14 +18,13 @@ type Games struct {
 }
 
 type Teams struct {
-	Away struct {
-		Team  Team
-		Score int `json:"score"`
-	} `json:"away"`
-	Home struct {
-		Team  Team
-		Score int `json:"score"`
-	} `json:"home"`
+	Away TeamScore `json:"away"`
+	Home TeamScore `json:"home"`
+}
+
+type TeamScore struct {
+	Team  Team
+	Score int `json:"score"`
 }
 
 type Team struct {
