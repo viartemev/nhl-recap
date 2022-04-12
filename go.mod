@@ -1,4 +1,4 @@
-module example
+module nhl-recap
 
 go 1.18
 

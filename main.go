@@ -2,15 +2,16 @@ package main
 
 import (
 	"bytes"
-	"example/client"
-	"example/domain"
 	"fmt"
-	tele "gopkg.in/telebot.v3"
 	"log"
+	"nhl-recap/client"
+	"nhl-recap/domain"
 	"os"
 	"strings"
 	"sync"
 	"time"
+
+	tele "gopkg.in/telebot.v3"
 )
 
 func main() {
