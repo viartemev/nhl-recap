@@ -3,33 +3,51 @@ package main
 import (
 	"bytes"
 	"fmt"
+	flag "github.com/spf13/pflag"
+	tele "gopkg.in/telebot.v3"
 	"log"
 	"nhl-recap/client"
 	"nhl-recap/domain"
-	"os"
 	"strings"
 	"sync"
 	"time"
-
-	tele "gopkg.in/telebot.v3"
 )
 
-func main() {
+type BotSettings struct {
+	Token    string
+	Settings *tele.Bot
+}
+
+func (b *BotSettings) Initialize() {
+	var err error
 	pref := tele.Settings{
-		Token:  os.Getenv("TOKEN"),
+		Token:  b.Token,
 		Poller: &tele.LongPoller{Timeout: 10 * time.Second},
 	}
 
-	b, err := tele.NewBot(pref)
+	b.Settings, err = tele.NewBot(pref)
 	if err != nil {
 		log.Fatal(err)
 		return
 	}
-	b.Handle("/games", func(c tele.Context) error {
+}
+
+var (
+	bot BotSettings
+)
+
+func init() {
+	flag.StringVarP(&bot.Token, "token", "t", "", "Token for Telegram Bot API")
+	flag.Parse()
+	bot.Initialize()
+
+}
+
+func main() {
+	bot.Settings.Handle("/games", func(c tele.Context) error {
 		return c.Send(fetchGames(), &tele.SendOptions{ParseMode: tele.ModeMarkdown})
 	})
-
-	b.Start()
+	bot.Settings.Start()
 }
 
 type GameInfo struct {
