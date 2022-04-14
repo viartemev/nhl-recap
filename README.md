@@ -1,5 +1,6 @@
 # NHL recap
 [![CI](https://github.com/viartemev/nhl-recap/actions/workflows/CI.yml/badge.svg?branch=master)](https://github.com/viartemev/nhl-recap/actions/workflows/CI.yml)
+[![CodeQL](https://github.com/viartemev/nhl-recap/actions/workflows/codeql-analysis.yml/badge.svg?branch=master)](https://github.com/viartemev/nhl-recap/actions/workflows/codeql-analysis.yml)
 
 ## Make commands
 ```shell
