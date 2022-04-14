@@ -10,11 +10,11 @@ docker_build_image: ## docker build
 	docker build -t $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG) .
 
 .PHONY: docker_scan_image
-docker_scan_image: docker_build_image ## docker build
+docker_scan_image: docker_build_image ## docker scan
 	docker scan $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG)
 
 .PHONY: docker_push_image
-docker_push_image: docker_scan_image  ## docker build
+docker_push_image: docker_scan_image  ## docker push
 	docker push $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG)
 
 .PHONY: go_mod_verify
@@ -23,7 +23,7 @@ go_mod_verify: ## go mod verify
 
 .PHONY: go_build
 go_build: ## go build -v ./...
-	go build -v ./...
+	go build -o $(DOCKER_IMAGE_NAME) main.go
 
 .PHONY: lint
 lint: ## golint ./...

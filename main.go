@@ -47,6 +47,8 @@ func main() {
 	bot.Settings.Handle("/games", func(c tele.Context) error {
 		return c.Send(fetchGames(), &tele.SendOptions{ParseMode: tele.ModeMarkdown})
 	})
+
+	fmt.Println("Telegran bot NHL Recap starting...")
 	bot.Settings.Start()
 }
 
@@ -68,7 +70,7 @@ func fetchGames() string {
 		go func(games domain.Games) {
 			gameInfo := client.HttpGet[domain.Game]("https://statsapi.web.nhl.com/api/v1/game/" + fmt.Sprintf("%v", games.GamePk) + "/content")
 			video := extractGameVideo(gameInfo)
-			title := fmt.Sprintf("*%v vs %v*\n🥅🏒 %v - %v ", games.Teams.Home.Team.Name, games.Teams.Away.Team.Name, games.Teams.Home.Score, games.Teams.Away.Score)
+			title := fmt.Sprintf("*%s*\n🥅🏒 %v - %v ", games.Teams.TeamsAndWinner(), games.Teams.Home.Score, games.Teams.Away.Score)
 			gamesVideos[games.GamePk] = &GameInfo{title, video}
 			defer wg.Done()
 		}(games)
@@ -77,7 +79,6 @@ func fetchGames() string {
 
 	var buffer bytes.Buffer
 	for _, info := range gamesVideos {
-		//fmt.Printf("[%v](%v)\n", info.Title, info.Video)
 		buffer.WriteString(fmt.Sprintf("%v[Recap](%v)\n", info.Title, info.Video))
 	}
 	return buffer.String()
