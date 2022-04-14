@@ -1,5 +1,6 @@
 DOCKER_IMAGE_NAME ?= nhl_recap
 DOCKER_IMAGE_TAG ?= latest
+DOCKER_REGISTRY ?= ghcr.io
 
 .PHONY: help
 help: ## This help.
@@ -11,7 +12,7 @@ docker_build_image: ## docker build
 
 .PHONY: docker_scan_image
 docker_scan_image: docker_build_image ## docker build
-	docker scan $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG)
+	docker scan ${DOCKER_REGISTRY}/$(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG)
 
 .PHONY: docker_push_image
 docker_push_image: docker_scan_image  ## docker build

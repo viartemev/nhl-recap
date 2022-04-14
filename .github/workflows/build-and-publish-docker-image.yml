@@ -25,5 +25,5 @@ jobs:
       - name: Build docker image
         run: make docker_build_image
 
-      - name: Docker Push
-        run: docker push ghcr.io/viartemev/nhl-recap:latest
+      - name: Push docker image
+        run: make docker_push_image
