@@ -13,7 +13,7 @@ docker_build_image: ## docker build
 .PHONY: docker_push_image
 docker_push_image: ## docker push
 	docker push ${DOCKER_REGISTRY}/$(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG)
-	
+
 .PHONY: docker_build_and_push_image
 docker_build_and_push_image: docker_build_image docker_push_image ## docker build and push
 
@@ -22,8 +22,8 @@ go_mod_verify: ## go mod verify
 	go mod verify
 
 .PHONY: go_build
-go_build: ## go build -v ./...
-	go build -v ./...
+go_build: ## go build
+	go build -o $(DOCKER_IMAGE_NAME) main.go
 
 .PHONY: lint
 lint: ## golint ./...
