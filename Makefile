@@ -1,3 +1,4 @@
+DOCKER_IMAGE_OWNER ?= viartemev
 DOCKER_IMAGE_NAME ?= nhl_recap
 DOCKER_IMAGE_TAG ?= latest
 DOCKER_REGISTRY ?= ghcr.io
@@ -8,11 +9,11 @@ help: ## This help.
 
 .PHONY: docker_build_image
 docker_build_image: ## docker build
-	docker build -t ${DOCKER_REGISTRY}/$(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG) .
+	docker build -t ${DOCKER_REGISTRY}/${DOCKER_IMAGE_OWNER}/$(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG) .
 
 .PHONY: docker_push_image
 docker_push_image: ## docker push
-	docker push ${DOCKER_REGISTRY}/$(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG)
+	docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE_OWNER}/$(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG)
 
 .PHONY: docker_build_and_push_image
 docker_build_and_push_image: docker_build_image docker_push_image ## docker build and push

@@ -31,7 +31,4 @@ jobs:
           password: ${{ secrets.GHCR_PAT }}
 
       - name: Build and push docker image
-        run: make docker_build_image && docker images ls
-        
-      - name: Docker ls
-        run: docker images ls
+        run: make docker_build_image && docker docker_push_image
