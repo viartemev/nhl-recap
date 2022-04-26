@@ -27,12 +27,16 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_PAT }}
-
-      - name: Build docker image
-        run: make docker_build_image
-
+      
+      - name: 'Build and push image'
+        uses: azure/docker-login@v1
+        with:
+          login-server: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_PAT }}
+      - run: |
+          docker build . -t ghcr.io/viartemev/nhl_recap:latest
+          docker push ghcr.io/viartemev/nhl_recap:latest
+      
       - name: Show images list
         run: docker images
-      
-      - name: Push images list
-        run: make docker_push_image
