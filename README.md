@@ -25,5 +25,5 @@ Usage of nhl_recap:
 
 ## Run docker
 ```shell
-docker run -d nhl_recap -t {TELEGRAM_BOT_TOKEN}
+docker run -d viartemev/nhl-recap -t {TELEGRAM_BOT_TOKEN}
 ```
