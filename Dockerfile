@@ -14,12 +14,9 @@ ENV GO111MODULE=on \
 
 WORKDIR ${APP_BUILD_PATH}
 
-COPY go.mod .
-COPY go.sum .
+COPY . .
 
 RUN go mod download
-
-COPY . .
 
 RUN CGO_ENABLED=${CGO_ENABLED} GOOS=${GOOS} GOARCH=${GOARCH}  go build   -o ${APP_BUILD_NAME}
 
