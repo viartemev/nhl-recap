@@ -9,18 +9,13 @@ import (
 	"time"
 )
 
-type BotSettings struct {
-	Token string
-}
-
-func (b *BotSettings) Initialize() *tele.Bot {
+func InitializeBot(token string) *tele.Bot {
 	var err error
 	var bot *tele.Bot
 	pref := tele.Settings{
-		Token:  b.Token,
+		Token:  token,
 		Poller: &tele.LongPoller{Timeout: 10 * time.Second},
 	}
-
 	bot, err = tele.NewBot(pref)
 	if err != nil {
 		log.Fatal(err)
@@ -30,16 +25,14 @@ func (b *BotSettings) Initialize() *tele.Bot {
 }
 
 var (
-	bot    BotSettings
 	newBot *tele.Bot
 )
 
 func init() {
-	flag.StringVarP(&bot.Token, "token", "t", "", "Token for Telegram Bot API")
-	bot.Token = "5383563071:AAGjtlFBfFtVqCd3tdLft4JZDPP9AWuLgbo"
-	fmt.Println(bot.Token)
+	var token string
+	flag.StringVarP(&token, "token", "t", "", "Token for Telegram Bot API")
 	flag.Parse()
-	newBot = bot.Initialize()
+	newBot = InitializeBot(token)
 }
 
 type Item struct {
