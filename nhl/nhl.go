@@ -42,14 +42,14 @@ type GameInfo struct {
 func RecapFetcher(games chan *GameInfo) {
 	for {
 		//TODO fix schedule
-		time.Sleep(30 * time.Second)
+		time.Sleep(10 * time.Minute)
 		log.Info("Fetching games")
 		g := fetchGames()
 		for key, element := range g {
 			if _, ok := gamesGG[key]; !ok {
 				gamesGG[key] = element
 				log.Debug(fmt.Sprintf("Sending game: %v", element))
-				games <- element //fmt.Sprintf("%v[Recap](%v)\n", element.Title, element.Video)
+				games <- element
 			}
 			//TODO remove old events
 		}
