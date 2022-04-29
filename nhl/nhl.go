@@ -7,6 +7,7 @@ import (
 	domain2 "nhl-recap/nhl/domain"
 	"strings"
 	"sync"
+	"time"
 )
 
 func extractGameVideo(game domain2.Game) (video string) {
@@ -27,6 +28,13 @@ func extractGameVideo(game domain2.Game) (video string) {
 type GameInfo struct {
 	Title string
 	Video string
+}
+
+func RecapFetcher(games chan string) {
+	for {
+		games <- "game info"
+		time.Sleep(5 * time.Second)
+	}
 }
 
 func FetchGames() string {
