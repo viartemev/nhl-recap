@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-var users = make([]int64, 1)
+var users = make([]int64, 0)
 
 func InitializeBot() *tele.Bot {
 	var token string
@@ -33,11 +33,13 @@ func InitializeBot() *tele.Bot {
 func SendSubscriptions(bot *tele.Bot, messages chan string) {
 	for {
 		message := <-messages
-		_, err := bot.Send(&tele.User{ID: 111067917}, message)
-		if err != nil {
-			fmt.Println(err)
+		for _, user := range users {
+			_, err := bot.Send(&tele.User{ID: user}, message)
+			if err != nil {
+				fmt.Println(err)
+			}
+			fmt.Println("Message sent")
 		}
-		fmt.Println("Message sent")
 	}
 }
 
