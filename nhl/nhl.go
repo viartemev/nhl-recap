@@ -1,7 +1,6 @@
 package nhl
 
 import (
-	"bytes"
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"nhl-recap/client"
@@ -50,15 +49,12 @@ func RecapFetcher(games chan string) {
 	}
 }
 
-func GetGames() string {
-	if len(gamesGG) == 0 {
-		return "There are no finished games"
+func GetGames() []*GameInfo {
+	gms := make([]*GameInfo, 0, len(gamesGG))
+	for _, gm := range gamesGG {
+		gms = append(gms, gm)
 	}
-	var buffer bytes.Buffer
-	for _, info := range gamesGG {
-		buffer.WriteString(fmt.Sprintf("%v[Recap](%v)\n", info.Title, info.Video))
-	}
-	return buffer.String()
+	return gms
 }
 
 func fetchGames() map[int]*GameInfo {

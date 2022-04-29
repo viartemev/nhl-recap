@@ -1,6 +1,8 @@
 package telegram
 
 import (
+	"bytes"
+	"fmt"
 	log "github.com/sirupsen/logrus"
 	flag "github.com/spf13/pflag"
 	tele "gopkg.in/telebot.v3"
@@ -52,8 +54,17 @@ func HandleSubscription(bot *tele.Bot) {
 
 func HandleGames(bot *tele.Bot) {
 	bot.Handle("/games", func(c tele.Context) error {
-		return c.Send(nhl.GetGames(), &tele.SendOptions{ParseMode: tele.ModeMarkdown})
+		var buffer bytes.Buffer
+		games := nhl.GetGames()
+		for _, game := range games {
+			buffer.WriteString(gameToTelegramMessage(game))
+		}
+		return c.Send(buffer.String(), &tele.SendOptions{ParseMode: tele.ModeMarkdown})
 	})
+}
+
+func gameToTelegramMessage(game *nhl.GameInfo) string {
+	return fmt.Sprintf("%v[Recap](%v)\n", game.Title, game.Video)
 }
 
 type Item struct {
