@@ -34,6 +34,7 @@ type GameInfo struct {
 
 func RecapFetcher(games chan string) {
 	for {
+		//TODO fix schedule
 		time.Sleep(30 * time.Second)
 		fmt.Println("Fetching games...")
 		g := fetchGames()
