@@ -37,10 +37,14 @@ jobs:
           username: ${{ env.USERNAME }}
           password: ${{ secrets.GHCR_PAT }}
 
+      - name: Docker tag generate
+        id: tag
+        run: echo "::set-output name=tag::$(git rev-parse --abbrev-ref HEAD)-$(git rev-parse --short HEAD)"
+
       - name: Build and push
         uses: docker/build-push-action@v2
         with:
           context: .
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-${{ github.run_number }}
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}
