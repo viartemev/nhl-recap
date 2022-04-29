@@ -13,7 +13,7 @@ func main() {
 
 	bot := telegram.InitializeBot()
 
-	games := make(chan string)
+	games := make(chan *nhl.GameInfo)
 
 	telegram.HandleSubscription(bot)
 	telegram.HandleGames(bot)

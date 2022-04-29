@@ -1,7 +1,6 @@
 package nhl
 
 import (
-	"bytes"
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"nhl-recap/client"
@@ -29,11 +28,18 @@ func extractGameVideo(game domain.Game) (video string) {
 }
 
 type GameInfo struct {
-	Title string
-	Video string
+	Video    string
+	HomeTeam struct {
+		Name  string
+		Score int
+	}
+	AwayTeam struct {
+		Name  string
+		Score int
+	}
 }
 
-func RecapFetcher(games chan string) {
+func RecapFetcher(games chan *GameInfo) {
 	for {
 		//TODO fix schedule
 		time.Sleep(30 * time.Second)
@@ -43,22 +49,19 @@ func RecapFetcher(games chan string) {
 			if _, ok := gamesGG[key]; !ok {
 				gamesGG[key] = element
 				log.Debug(fmt.Sprintf("Sending game: %v", element))
-				games <- fmt.Sprintf("%v[Recap](%v)\n", element.Title, element.Video)
+				games <- element //fmt.Sprintf("%v[Recap](%v)\n", element.Title, element.Video)
 			}
 			//TODO remove old events
 		}
 	}
 }
 
-func GetGames() string {
-	if len(gamesGG) == 0 {
-		return "There are no finished games"
+func GetGames() []*GameInfo {
+	gms := make([]*GameInfo, 0, len(gamesGG))
+	for _, gm := range gamesGG {
+		gms = append(gms, gm)
 	}
-	var buffer bytes.Buffer
-	for _, info := range gamesGG {
-		buffer.WriteString(fmt.Sprintf("%v[Recap](%v)\n", info.Title, info.Video))
-	}
-	return buffer.String()
+	return gms
 }
 
 func fetchGames() map[int]*GameInfo {
@@ -71,8 +74,18 @@ func fetchGames() map[int]*GameInfo {
 		go func(games domain.Games) {
 			gameInfo := client.HttpGet[domain.Game]("https://statsapi.web.nhl.com/api/v1/game/" + fmt.Sprintf("%v", games.GamePk) + "/content")
 			video := extractGameVideo(gameInfo)
-			title := fmt.Sprintf("*%s*\n🥅🏒 %v - %v ", games.Teams.TeamsAndWinner(), games.Teams.Home.Score, games.Teams.Away.Score)
-			gamesInfo[games.GamePk] = &GameInfo{title, video}
+			//title := fmt.Sprintf("*%s*\n🥅🏒 %v - %v ", games.Teams.TeamsAndWinner(), games.Teams.Home.Score, games.Teams.Away.Score)
+			gamesInfo[games.GamePk] = &GameInfo{
+				Video: video,
+				HomeTeam: struct {
+					Name  string
+					Score int
+				}{Name: games.Teams.Home.Team.Name, Score: games.Teams.Home.Score},
+				AwayTeam: struct {
+					Name  string
+					Score int
+				}{Name: games.Teams.Away.Team.Name, Score: games.Teams.Away.Score},
+			}
 			defer wg.Done()
 		}(games)
 	}
