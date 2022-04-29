@@ -31,11 +31,11 @@ func InitializeBot() *tele.Bot {
 	return bot
 }
 
-func SendSubscriptions(bot *tele.Bot, messages chan string) {
+func SendSubscriptions(bot *tele.Bot, messages chan *nhl.GameInfo) {
 	for {
 		message := <-messages
 		for _, user := range users {
-			_, err := bot.Send(&tele.User{ID: user}, message, &tele.SendOptions{ParseMode: tele.ModeMarkdown})
+			_, err := bot.Send(&tele.User{ID: user}, gameInfoToTelegramMessage(message), &tele.SendOptions{ParseMode: tele.ModeMarkdown})
 			if err != nil {
 				log.Error("Can't send a message", err)
 			}
@@ -48,6 +48,7 @@ func HandleSubscription(bot *tele.Bot) {
 	bot.Handle("/subscribe", func(c tele.Context) error {
 		recipient := c.Sender().ID
 		users = append(users, recipient)
+		log.WithFields(log.Fields{"user": recipient}).Info("User subscribed")
 		return c.Send("Successfully subscribed")
 	})
 }
@@ -57,14 +58,14 @@ func HandleGames(bot *tele.Bot) {
 		var buffer bytes.Buffer
 		games := nhl.GetGames()
 		for _, game := range games {
-			buffer.WriteString(gameToTelegramMessage(game))
+			buffer.WriteString(gameInfoToTelegramMessage(game))
 		}
 		return c.Send(buffer.String(), &tele.SendOptions{ParseMode: tele.ModeMarkdown})
 	})
 }
 
-func gameToTelegramMessage(game *nhl.GameInfo) string {
-	return fmt.Sprintf("%v[Recap](%v)\n", game.Title, game.Video)
+func gameInfoToTelegramMessage(game *nhl.GameInfo) string {
+	return fmt.Sprintf("(%v vs %v) %v - %v video: %v \n", game.HomeTeam.Name, game.AwayTeam.Name, game.HomeTeam.Score, game.AwayTeam.Score, game.Video)
 }
 
 type Item struct {
