@@ -34,7 +34,7 @@ func SendSubscriptions(bot *tele.Bot, messages chan string) {
 	for {
 		message := <-messages
 		for _, user := range users {
-			_, err := bot.Send(&tele.User{ID: user}, message)
+			_, err := bot.Send(&tele.User{ID: user}, message, &tele.SendOptions{ParseMode: tele.ModeMarkdown})
 			if err != nil {
 				fmt.Println(err)
 			}
@@ -53,7 +53,7 @@ func HandleSubscription(bot *tele.Bot) {
 
 func HandleGames(bot *tele.Bot) {
 	bot.Handle("/games", func(c tele.Context) error {
-		return c.Send(nhl.FetchGames(), &tele.SendOptions{ParseMode: tele.ModeMarkdown})
+		return c.Send(nhl.GetGames(), &tele.SendOptions{ParseMode: tele.ModeMarkdown})
 	})
 }
 
