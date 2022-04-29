@@ -58,6 +58,6 @@ func HandleGames(bot *tele.Bot) {
 }
 
 type Item struct {
-	Message   string
 	Recipient tele.Recipient
+	Message   string
 }

@@ -31,6 +31,7 @@ type GameInfo struct {
 }
 
 func RecapFetcher(games chan string) {
+	// TODO implement fetch logic here
 	for {
 		games <- "game info"
 		time.Sleep(5 * time.Second)
