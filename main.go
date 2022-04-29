@@ -1,12 +1,16 @@
 package main
 
 import (
-	"fmt"
+	log "github.com/sirupsen/logrus"
 	"nhl-recap/nhl"
 	"nhl-recap/telegram"
+	"os"
 )
 
 func main() {
+	log.SetOutput(os.Stdout)
+	log.SetLevel(log.InfoLevel)
+
 	bot := telegram.InitializeBot()
 
 	games := make(chan string)
@@ -16,7 +20,6 @@ func main() {
 
 	go nhl.RecapFetcher(games)
 	go telegram.SendSubscriptions(bot, games)
-
-	fmt.Println("Telegram bot NHL Recap starting...")
+	log.Info("NHL Recap telegram bot is starting...")
 	bot.Start()
 }

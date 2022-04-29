@@ -3,6 +3,7 @@ package nhl
 import (
 	"bytes"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"nhl-recap/client"
 	"nhl-recap/nhl/domain"
 	"strings"
@@ -36,12 +37,12 @@ func RecapFetcher(games chan string) {
 	for {
 		//TODO fix schedule
 		time.Sleep(30 * time.Second)
-		fmt.Println("Fetching games...")
+		log.Info("Fetching games")
 		g := fetchGames()
 		for key, element := range g {
 			if _, ok := gamesGG[key]; !ok {
 				gamesGG[key] = element
-				fmt.Println(fmt.Sprintf("Sending game: %v", element))
+				log.Debug(fmt.Sprintf("Sending game: %v", element))
 				games <- fmt.Sprintf("%v[Recap](%v)\n", element.Title, element.Video)
 			}
 			//TODO remove old events
