@@ -1,10 +1,9 @@
 package telegram
 
 import (
-	"fmt"
+	log "github.com/sirupsen/logrus"
 	flag "github.com/spf13/pflag"
 	tele "gopkg.in/telebot.v3"
-	"log"
 	"nhl-recap/nhl"
 	"time"
 )
@@ -36,9 +35,9 @@ func SendSubscriptions(bot *tele.Bot, messages chan string) {
 		for _, user := range users {
 			_, err := bot.Send(&tele.User{ID: user}, message, &tele.SendOptions{ParseMode: tele.ModeMarkdown})
 			if err != nil {
-				fmt.Println(err)
+				log.Error("Can't send a message", err)
 			}
-			fmt.Println("Message sent")
+			log.Debug("A message has sent")
 		}
 	}
 }
