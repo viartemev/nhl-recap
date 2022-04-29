@@ -10,26 +10,28 @@ import (
 )
 
 type BotSettings struct {
-	Token    string
-	Settings *tele.Bot
+	Token string
 }
 
-func (b *BotSettings) Initialize() {
+func (b *BotSettings) Initialize() *tele.Bot {
 	var err error
+	var bot *tele.Bot
 	pref := tele.Settings{
 		Token:  b.Token,
 		Poller: &tele.LongPoller{Timeout: 10 * time.Second},
 	}
 
-	b.Settings, err = tele.NewBot(pref)
+	bot, err = tele.NewBot(pref)
 	if err != nil {
 		log.Fatal(err)
-		return
+		return nil
 	}
+	return bot
 }
 
 var (
-	bot BotSettings
+	bot    BotSettings
+	newBot *tele.Bot
 )
 
 func init() {
@@ -37,8 +39,7 @@ func init() {
 	bot.Token = "5383563071:AAGjtlFBfFtVqCd3tdLft4JZDPP9AWuLgbo"
 	fmt.Println(bot.Token)
 	flag.Parse()
-	bot.Initialize()
-
+	newBot = bot.Initialize()
 }
 
 type Item struct {
@@ -49,7 +50,7 @@ type Item struct {
 func sendMessages(messages chan Item) {
 	for {
 		message := <-messages
-		_, err := bot.Settings.Send(message.Recipient, message.Message)
+		_, err := newBot.Send(message.Recipient, message.Message)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -61,11 +62,11 @@ func main() {
 	var users = make([]int64, 1)
 	messages := make(chan Item)
 
-	bot.Settings.Handle("/games", func(c tele.Context) error {
+	newBot.Handle("/games", func(c tele.Context) error {
 		return c.Send(nhl.FetchGames(), &tele.SendOptions{ParseMode: tele.ModeMarkdown})
 	})
 
-	bot.Settings.Handle("/subscribe", func(c tele.Context) error {
+	newBot.Handle("/subscribe", func(c tele.Context) error {
 		recipient := c.Sender().ID
 		users = append(users, recipient)
 		return c.Send("Successfully subscribed")
@@ -81,5 +82,5 @@ func main() {
 	}(messages)
 
 	fmt.Println("Telegram bot NHL Recap starting...")
-	bot.Settings.Start()
+	newBot.Start()
 }
