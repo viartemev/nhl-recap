@@ -29,14 +29,13 @@ func extractGameVideo(game domain.Game) (video string) {
 
 type GameInfo struct {
 	Video    string
-	HomeTeam struct {
-		Name  string
-		Score int
-	}
-	AwayTeam struct {
-		Name  string
-		Score int
-	}
+	HomeTeam *TeamInfo
+	AwayTeam *TeamInfo
+}
+
+type TeamInfo struct {
+	Name  string
+	Score int
 }
 
 func RecapFetcher(games chan *GameInfo) {
@@ -69,28 +68,25 @@ func fetchGames() map[int]*GameInfo {
 	var gamesInfo = make(map[int]*GameInfo)
 	schedule := client.HttpGet[domain.Schedule]("https://statsapi.web.nhl.com/api/v1/schedule")
 	finishedGames := filterFinishedGames(schedule)
-	for _, games := range finishedGames {
+	for _, game := range finishedGames {
 		wg.Add(1)
-		go func(games domain.Games) {
-			gameInfo := client.HttpGet[domain.Game]("https://statsapi.web.nhl.com/api/v1/game/" + fmt.Sprintf("%v", games.GamePk) + "/content")
-			video := extractGameVideo(gameInfo)
-			//title := fmt.Sprintf("*%s*\n🥅🏒 %v - %v ", games.Teams.TeamsAndWinner(), games.Teams.Home.Score, games.Teams.Away.Score)
-			gamesInfo[games.GamePk] = &GameInfo{
-				Video: video,
-				HomeTeam: struct {
-					Name  string
-					Score int
-				}{Name: games.Teams.Home.Team.Name, Score: games.Teams.Home.Score},
-				AwayTeam: struct {
-					Name  string
-					Score int
-				}{Name: games.Teams.Away.Team.Name, Score: games.Teams.Away.Score},
-			}
+		go func(game domain.Games) {
+			gamesInfo[game.GamePk] = fetchGameInfo(game)
 			defer wg.Done()
-		}(games)
+		}(game)
 	}
 	wg.Wait()
 	return gamesInfo
+}
+
+func fetchGameInfo(game domain.Games) *GameInfo {
+	gameInfo := client.HttpGet[domain.Game]("https://statsapi.web.nhl.com/api/v1/game/" + fmt.Sprintf("%v", game.GamePk) + "/content")
+	video := extractGameVideo(gameInfo)
+	return &GameInfo{
+		video,
+		&TeamInfo{game.Teams.Home.Team.Name, game.Teams.Home.Score},
+		&TeamInfo{game.Teams.Away.Team.Name, game.Teams.Away.Score},
+	}
 }
 
 func filterFinishedGames(schedule domain.Schedule) (finishedGames []domain.Games) {
