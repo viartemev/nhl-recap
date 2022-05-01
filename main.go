@@ -11,15 +11,16 @@ func main() {
 	log.SetOutput(os.Stdout)
 	log.SetLevel(log.InfoLevel)
 
-	bot := telegram.InitializeBot()
+	nhlRecapBot := telegram.InitializeBot()
 
 	games := make(chan *nhl.GameInfo)
 
-	telegram.HandleSubscription(bot)
-	telegram.HandleGames(bot)
+	nhlRecapBot.HandleSubscription()
+	nhlRecapBot.HandleGames()
 
 	go nhl.RecapFetcher(games)
-	go telegram.SendSubscriptions(bot, games)
-	log.Info("NHL Recap telegram bot is starting...")
-	bot.Start()
+	go nhlRecapBot.SendSubscriptions(games)
+
+	log.Info("NHL Recap telegram nhlRecapBot is starting...")
+	nhlRecapBot.Start()
 }

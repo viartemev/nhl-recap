@@ -10,9 +10,13 @@ import (
 	"time"
 )
 
+type NHLRecapBot struct {
+	*tele.Bot
+}
+
 var users = make([]int64, 0)
 
-func InitializeBot() *tele.Bot {
+func InitializeBot() *NHLRecapBot {
 	var token string
 	flag.StringVarP(&token, "token", "t", "", "Token for Telegram Bot API")
 	flag.Parse()
@@ -25,26 +29,26 @@ func InitializeBot() *tele.Bot {
 	}
 	bot, err = tele.NewBot(pref)
 	if err != nil {
-		log.Fatal(err)
+		log.WithError(err).Error("Can't start bot")
 		return nil
 	}
-	return bot
+	return &NHLRecapBot{bot}
 }
 
-func SendSubscriptions(bot *tele.Bot, messages chan *nhl.GameInfo) {
+func (bot *NHLRecapBot) SendSubscriptions(messages chan *nhl.GameInfo) {
 	for {
 		message := <-messages
 		for _, user := range users {
 			_, err := bot.Send(&tele.User{ID: user}, gameInfoToTelegramMessage(message), &tele.SendOptions{ParseMode: tele.ModeMarkdown})
 			if err != nil {
-				log.Error("Can't send a message", err)
+				log.WithError(err).Error("Can't send a message")
 			}
 			log.Debug("A message has sent")
 		}
 	}
 }
 
-func HandleSubscription(bot *tele.Bot) {
+func (bot *NHLRecapBot) HandleSubscription() {
 	bot.Handle("/subscribe", func(c tele.Context) error {
 		recipient := c.Sender().ID
 		users = append(users, recipient)
@@ -53,7 +57,7 @@ func HandleSubscription(bot *tele.Bot) {
 	})
 }
 
-func HandleGames(bot *tele.Bot) {
+func (bot *NHLRecapBot) HandleGames() {
 	bot.Handle("/games", func(c tele.Context) error {
 		var buffer bytes.Buffer
 		games := nhl.GetGames()
