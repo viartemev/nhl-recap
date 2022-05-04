@@ -5,12 +5,13 @@ import (
 	"github.com/go-resty/resty/v2"
 	log "github.com/sirupsen/logrus"
 	"nhl-recap/nhl/domain"
+	"nhl-recap/util"
 	"strconv"
 	"sync"
 	"time"
 )
 
-var gamesGG = make(map[int]*GameInfo)
+var games = util.NewConcurrentMap[int, *GameInfo]()
 
 type GameInfo struct {
 	Video    string
@@ -23,17 +24,17 @@ type TeamInfo struct {
 	Score int
 }
 
-func RecapFetcher(games chan *GameInfo) {
+func RecapFetcher(gameInfo chan *GameInfo) {
 	for {
 		//TODO fix schedule
 		time.Sleep(10 * time.Second)
-		log.Info("Fetching games")
+		log.Info("Fetching gameInfo")
 		g := fetchGames()
 		for key, element := range g {
-			if _, ok := gamesGG[key]; !ok {
-				gamesGG[key] = element
+			if _, ok := games.Get(key); !ok {
+				games.Put(key, element)
 				log.Debug(fmt.Sprintf("Sending game: %v", element))
-				games <- element
+				gameInfo <- element
 			}
 			//TODO remove old events
 		}
@@ -45,10 +46,10 @@ func GetSchedule() string {
 }
 
 func GetGames() []*GameInfo {
-	gms := make([]*GameInfo, 0, len(gamesGG))
-	for _, gm := range gamesGG {
-		gms = append(gms, gm)
-	}
+	gms := make([]*GameInfo, 0, games.Length())
+	games.Range(func(gameInfo *GameInfo) {
+		gms = append(gms, gameInfo)
+	})
 	return gms
 }
 
