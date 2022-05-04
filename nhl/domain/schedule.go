@@ -6,6 +6,17 @@ type Schedule struct {
 	Dates []DateGames
 }
 
+func (s *Schedule) ExtractFinishedGames() (finishedGames []Games) {
+	for _, date := range s.Dates {
+		for _, game := range date.Games {
+			if game.Status.AbstractGameState == "Final" {
+				finishedGames = append(finishedGames, game)
+			}
+		}
+	}
+	return
+}
+
 type DateGames struct {
 	Date  string `json:"date"`
 	Games []Games

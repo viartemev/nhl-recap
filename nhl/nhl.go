@@ -6,7 +6,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"nhl-recap/nhl/domain"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 )
@@ -62,7 +61,7 @@ func fetchGames() map[int]*GameInfo {
 	if err != nil {
 		log.WithError(err).Error("Can't get schedule")
 	}
-	finishedGames := filterFinishedGames(schedule)
+	finishedGames := schedule.ExtractFinishedGames()
 	for _, game := range finishedGames {
 		wg.Add(1)
 		go func(game domain.Games) {
@@ -84,36 +83,10 @@ func fetchGameInfo(game domain.Games) *GameInfo {
 	if err != nil {
 		log.WithError(err).Error("Can't get game info")
 	}
-	video := extractGameVideo(result)
+	video := result.ExtractGameVideo()
 	return &GameInfo{
 		video,
 		&TeamInfo{game.Teams.Home.Team.Name, game.Teams.Home.Score},
 		&TeamInfo{game.Teams.Away.Team.Name, game.Teams.Away.Score},
 	}
-}
-
-func extractGameVideo(game *domain.Game) (video string) {
-	for _, media := range game.Media.Epg {
-		if media.Title == "Recap" {
-			for _, item := range media.Items {
-				for _, playback := range item.Playbacks {
-					if strings.Contains(playback.Name, "FLASH_1800K") {
-						video = playback.Url
-					}
-				}
-			}
-		}
-	}
-	return
-}
-
-func filterFinishedGames(schedule *domain.Schedule) (finishedGames []domain.Games) {
-	for _, date := range schedule.Dates {
-		for _, game := range date.Games {
-			if game.Status.AbstractGameState == "Final" {
-				finishedGames = append(finishedGames, game)
-			}
-		}
-	}
-	return
 }
