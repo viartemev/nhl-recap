@@ -39,3 +39,9 @@ func (c *ConcurrentMap[K, V]) Range(fun func(value V)) {
 		fun(info)
 	}
 }
+
+func (c *ConcurrentMap[K, V]) ToMap() map[K]V {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
+	return c.m
+}

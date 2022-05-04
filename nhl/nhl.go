@@ -55,8 +55,7 @@ func GetGames() []*GameInfo {
 
 func fetchGames() map[int]*GameInfo {
 	var wg sync.WaitGroup
-	var mutex sync.Mutex
-	var gamesInfo = make(map[int]*GameInfo)
+	var gamesInfo = util.NewConcurrentMap[int, *GameInfo]()
 	schedule := &domain.Schedule{}
 	_, err := resty.New().R().SetResult(schedule).Get("https://statsapi.web.nhl.com/api/v1/schedule")
 	if err != nil {
@@ -66,14 +65,12 @@ func fetchGames() map[int]*GameInfo {
 	for _, game := range finishedGames {
 		wg.Add(1)
 		go func(game domain.Games) {
-			mutex.Lock()
-			gamesInfo[game.GamePk] = fetchGameInfo(game)
+			gamesInfo.Put(game.GamePk, fetchGameInfo(game))
 			defer wg.Done()
-			defer mutex.Unlock()
 		}(game)
 	}
 	wg.Wait()
-	return gamesInfo
+	return gamesInfo.ToMap()
 }
 
 func fetchGameInfo(game domain.Games) *GameInfo {
