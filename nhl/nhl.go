@@ -5,27 +5,13 @@ import (
 	"github.com/go-resty/resty/v2"
 	log "github.com/sirupsen/logrus"
 	"nhl-recap/nhl/domain"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 )
 
 var gamesGG = make(map[int]*GameInfo)
-
-func extractGameVideo(game *domain.Game) (video string) {
-	for _, media := range game.Media.Epg {
-		if media.Title == "Recap" {
-			for _, item := range media.Items {
-				for _, playback := range item.Playbacks {
-					if strings.Contains(playback.Name, "FLASH_1800K") {
-						video = playback.Url
-					}
-				}
-			}
-		}
-	}
-	return
-}
 
 type GameInfo struct {
 	Video    string
@@ -93,7 +79,7 @@ func fetchGames() map[int]*GameInfo {
 func fetchGameInfo(game domain.Games) *GameInfo {
 	result := &domain.Game{}
 	_, err := resty.New().R().SetResult(result).SetPathParams(map[string]string{
-		"gamePk": string(rune(game.GamePk)),
+		"gamePk": strconv.Itoa(game.GamePk),
 	}).Get("https://statsapi.web.nhl.com/api/v1/game/{gamePk}/content")
 	if err != nil {
 		log.WithError(err).Error("Can't get game info")
@@ -104,6 +90,21 @@ func fetchGameInfo(game domain.Games) *GameInfo {
 		&TeamInfo{game.Teams.Home.Team.Name, game.Teams.Home.Score},
 		&TeamInfo{game.Teams.Away.Team.Name, game.Teams.Away.Score},
 	}
+}
+
+func extractGameVideo(game *domain.Game) (video string) {
+	for _, media := range game.Media.Epg {
+		if media.Title == "Recap" {
+			for _, item := range media.Items {
+				for _, playback := range item.Playbacks {
+					if strings.Contains(playback.Name, "FLASH_1800K") {
+						video = playback.Url
+					}
+				}
+			}
+		}
+	}
+	return
 }
 
 func filterFinishedGames(schedule *domain.Schedule) (finishedGames []domain.Games) {
