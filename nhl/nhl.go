@@ -55,6 +55,10 @@ func RecapFetcher(games chan *GameInfo) {
 	}
 }
 
+func GetSchedule() string {
+	return "schedule"
+}
+
 func GetGames() []*GameInfo {
 	gms := make([]*GameInfo, 0, len(gamesGG))
 	for _, gm := range gamesGG {

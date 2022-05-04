@@ -57,6 +57,12 @@ func (bot *NHLRecapBot) HandleSubscription() {
 	})
 }
 
+func (bot *NHLRecapBot) HandleSchedule() {
+	bot.Handle("/schedule", func(c tele.Context) error {
+		return c.Send(nhl.GetSchedule(), &tele.SendOptions{ParseMode: tele.ModeMarkdown})
+	})
+}
+
 func (bot *NHLRecapBot) HandleGames() {
 	bot.Handle("/games", func(c tele.Context) error {
 		var buffer bytes.Buffer
