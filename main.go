@@ -16,6 +16,7 @@ func main() {
 	games := make(chan *nhl.GameInfo)
 
 	nhlRecapBot.HandleSubscription()
+	nhlRecapBot.HandleSchedule()
 	nhlRecapBot.HandleGames()
 
 	go nhl.RecapFetcher(games)
