@@ -59,7 +59,7 @@ func (bot *NHLRecapBot) HandleSubscription() {
 
 func (bot *NHLRecapBot) HandleSchedule() {
 	bot.Handle("/schedule", func(c tele.Context) error {
-		log.Info("Request schedule")
+		log.Debug("Schedule was requested")
 		return c.Send(nhl.GetSchedule(), &tele.SendOptions{ParseMode: tele.ModeMarkdown})
 	})
 }
