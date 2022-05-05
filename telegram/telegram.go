@@ -8,6 +8,7 @@ import (
 	tele "gopkg.in/telebot.v3"
 	"nhl-recap/nhl"
 	"nhl-recap/util"
+	"strings"
 	"time"
 )
 
@@ -41,7 +42,7 @@ func (bot *NHLRecapBot) SendSubscriptions(messages <-chan *nhl.GameInfo) {
 		for {
 			message := <-messages
 			users.Range(func(user int64) {
-				_, err := bot.Send(&tele.User{ID: user}, gameInfoToTelegramMessage(message), &tele.SendOptions{ParseMode: tele.ModeMarkdown})
+				_, err := bot.Send(&tele.User{ID: user}, GameInfoToTelegramMessage(message), &tele.SendOptions{ParseMode: tele.ModeMarkdown})
 				if err != nil {
 					log.WithError(err).Error("Can't send a message")
 				}
@@ -81,13 +82,22 @@ func (bot *NHLRecapBot) HandleGames() {
 		log.Debug("Games were requested")
 		var buffer bytes.Buffer
 		games := nhl.GetGames()
+		if len(games) == 0 {
+			return c.Send("Sorry, there are no games", &tele.SendOptions{ParseMode: tele.ModeMarkdown})
+		}
 		for _, game := range games {
-			buffer.WriteString(gameInfoToTelegramMessage(game))
+			buffer.WriteString(GameInfoToTelegramMessage(game))
 		}
 		return c.Send(buffer.String(), &tele.SendOptions{ParseMode: tele.ModeMarkdown})
 	})
 }
 
-func gameInfoToTelegramMessage(game *nhl.GameInfo) string {
-	return fmt.Sprintf("(%v vs %v) %v - %v video: %v \n", game.HomeTeam.Name, game.AwayTeam.Name, game.HomeTeam.Score, game.AwayTeam.Score, game.Video)
+func GameInfoToTelegramMessage(game *nhl.GameInfo) string {
+	var buffer bytes.Buffer
+	buffer.WriteString(fmt.Sprintf("+%s+\n", strings.Repeat("-", 35)))
+	buffer.WriteString(fmt.Sprintf("| %-26s  %5d |\n", game.HomeTeam.Name, game.HomeTeam.Score))
+	buffer.WriteString(fmt.Sprintf("|%s|\n", strings.Repeat("-", 35)))
+	buffer.WriteString(fmt.Sprintf("| %-26s  %5d |\n", game.AwayTeam.Name, game.HomeTeam.Score))
+	buffer.WriteString(fmt.Sprintf("+%s+\n", strings.Repeat("-", 35)))
+	return buffer.String()
 }
