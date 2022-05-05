@@ -36,17 +36,19 @@ func InitializeBot() *NHLRecapBot {
 	return &NHLRecapBot{bot}
 }
 
-func (bot *NHLRecapBot) SendSubscriptions(messages chan *nhl.GameInfo) {
-	for {
-		message := <-messages
-		users.Range(func(user int64) {
-			_, err := bot.Send(&tele.User{ID: user}, gameInfoToTelegramMessage(message), &tele.SendOptions{ParseMode: tele.ModeMarkdown})
-			if err != nil {
-				log.WithError(err).Error("Can't send a message")
-			}
-			log.Debug("A message has sent")
-		})
-	}
+func (bot *NHLRecapBot) SendSubscriptions(messages <-chan *nhl.GameInfo) {
+	go func() {
+		for {
+			message := <-messages
+			users.Range(func(user int64) {
+				_, err := bot.Send(&tele.User{ID: user}, gameInfoToTelegramMessage(message), &tele.SendOptions{ParseMode: tele.ModeMarkdown})
+				if err != nil {
+					log.WithError(err).Error("Can't send a message")
+				}
+				log.Debug("A message has sent")
+			})
+		}
+	}()
 }
 
 func (bot *NHLRecapBot) HandleSubscription() {

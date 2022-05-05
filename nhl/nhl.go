@@ -24,21 +24,25 @@ type TeamInfo struct {
 	Score int
 }
 
-func RecapFetcher(gameInfo chan *GameInfo) {
-	for {
-		//TODO fix schedule
-		time.Sleep(10 * time.Second)
-		log.Info("Fetching gameInfo")
-		g := fetchGames()
-		for key, element := range g {
-			if _, ok := games.Get(key); !ok {
-				games.Put(key, element)
-				log.Debug(fmt.Sprintf("Sending game: %v", element))
-				gameInfo <- element
+func RecapFetcher() <-chan *GameInfo {
+	out := make(chan *GameInfo)
+	go func() {
+		for {
+			//TODO fix schedule
+			time.Sleep(10 * time.Second)
+			log.Info("Fetching gameInfo")
+			g := fetchGames()
+			for key, element := range g {
+				if _, ok := games.Get(key); !ok {
+					games.Put(key, element)
+					log.Debug(fmt.Sprintf("Sending game: %v", element))
+					out <- element
+				}
+				//TODO remove old events
 			}
-			//TODO remove old events
 		}
-	}
+	}()
+	return out
 }
 
 func GetSchedule() string {
