@@ -10,12 +10,12 @@ func TestGameInfoToTelegramMessage(t *testing.T) {
 	game := &nhl.GameInfo{
 		Video: "video-link",
 		HomeTeam: &nhl.TeamInfo{
-			Name:  "Team 1",
-			Score: 10,
+			Name:  "Calgary Flames",
+			Score: 0,
 		},
 		AwayTeam: &nhl.TeamInfo{
-			Name:  "Team 2",
-			Score: 1,
+			Name:  "Dallas Stars",
+			Score: 0,
 		},
 	}
 	telegramMessage := GameInfoToTelegramMessage(game)

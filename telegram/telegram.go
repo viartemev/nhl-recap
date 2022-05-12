@@ -94,10 +94,12 @@ func (bot *NHLRecapBot) HandleGames() {
 
 func GameInfoToTelegramMessage(game *nhl.GameInfo) string {
 	var buffer bytes.Buffer
-	buffer.WriteString(fmt.Sprintf("+%s+\n", strings.Repeat("-", 35)))
-	buffer.WriteString(fmt.Sprintf("| %-26s  %5d |\n", game.HomeTeam.Name, game.HomeTeam.Score))
-	buffer.WriteString(fmt.Sprintf("|%s|\n", strings.Repeat("-", 35)))
-	buffer.WriteString(fmt.Sprintf("| %-26s  %5d |\n", game.AwayTeam.Name, game.HomeTeam.Score))
-	buffer.WriteString(fmt.Sprintf("+%s+\n", strings.Repeat("-", 35)))
+	buffer.WriteString(fmt.Sprintf("+%s+\n", strings.Repeat("-", 30)))
+	buffer.WriteString(fmt.Sprintf("| %-24s  %5d |\n", game.HomeTeam.Name, game.HomeTeam.Score))
+	buffer.WriteString(fmt.Sprintf("|%s|\n", strings.Repeat("-", 30)))
+	buffer.WriteString(fmt.Sprintf("| %-24s  %5d |\n", game.AwayTeam.Name, game.AwayTeam.Score))
+	buffer.WriteString(fmt.Sprintf("|%s|\n", strings.Repeat("-", 30)))
+	buffer.WriteString(fmt.Sprintf("| [%s](%s)  |\n", "Recap", game.Video))
+	buffer.WriteString(fmt.Sprintf("+%s+\n", strings.Repeat("-", 30)))
 	return buffer.String()
 }
