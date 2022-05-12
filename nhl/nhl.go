@@ -29,7 +29,7 @@ func RecapFetcher() <-chan *GameInfo {
 	go func() {
 		for {
 			//TODO fix schedule
-			time.Sleep(10 * time.Second)
+			time.Sleep(1 * time.Minute)
 			log.Info("Fetching gameInfo")
 			g := fetchGames()
 			for key, element := range g {
