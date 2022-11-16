@@ -5,13 +5,8 @@ import (
 	"image"
 	"image/color"
 	"image/png"
-	"math/rand"
 	"os"
-	"time"
 )
-
-var img []byte
-
 type Scene struct {
 	Width, Height int
 	Img           *image.RGBA
@@ -23,22 +18,6 @@ func NewScene(width int, height int) *Scene {
 		Height: height,
 		Img:    image.NewRGBA(image.Rect(0, 0, width, height)),
 		}
-}
-
-
-func generateImage(w, h int, pixelColor color.RGBA) *image.RGBA {
-	img := image.NewRGBA(image.Rect(0, 0, 4, 4))
-	for x := 0; x < 4; x++ {
-		for y := 0; y < 4; y++ {
-			img.Set(x, y, pixelColor)
-		}
-	}
-	return img
-}
-
-func randomColor() color.RGBA {
-	rand := rand.New(rand.NewSource(time.Now().Unix()))
-	return color.RGBA{uint8(rand.Intn(255)), uint8(rand.Intn(255)), uint8(rand.Intn(255)), 255}
 }
 
 func (s *Scene) EachPixel(colorFunction func(int, int) color.RGBA) {
@@ -59,7 +38,9 @@ func (s *Scene) Save(filename string) {
 	png.Encode(f, s.Img)
 }
 
-func GeneratePreview()  {
+func GenerateScoreCard() []byte {
+	//TODO use game info to generate image
+
 	var width = 200
 	var height = 200
 	scene := NewScene(width, height)
@@ -73,9 +54,5 @@ func GeneratePreview()  {
 	})
 	buf := new(bytes.Buffer)
 	_ = png.Encode(buf, scene.Img)
-	img = buf.Bytes()
-}
-
-func ShowImage() []byte {
-	return img
+	return buf.Bytes()
 }
