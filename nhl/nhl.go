@@ -14,6 +14,7 @@ import (
 var games = util.NewConcurrentMap[int, *GameInfo]()
 
 type GameInfo struct {
+	GamePk int
 	Video    string
 	HomeTeam *TeamInfo
 	AwayTeam *TeamInfo
@@ -27,26 +28,18 @@ type TeamInfo struct {
 func RecapFetcher() <-chan *GameInfo {
 	out := make(chan *GameInfo)
 	go func() {
-		for {
-			//TODO fix schedule
-			time.Sleep(1 * time.Minute)
+		for range time.Tick(time.Minute) {
 			log.Info("Fetching gameInfo")
 			g := fetchGames()
-			for key, element := range g {
-				if _, ok := games.Get(key); !ok {
-					games.Put(key, element)
+			for element := range g {
+					games.Put(element.GamePk, element)
 					log.Debug(fmt.Sprintf("Sending game: %v", element))
 					out <- element
-				}
 				//TODO remove old events
 			}
 		}
 	}()
 	return out
-}
-
-func GetSchedule() string {
-	return "schedule"
 }
 
 func GetGames() []*GameInfo {
@@ -57,9 +50,9 @@ func GetGames() []*GameInfo {
 	return gms
 }
 
-func fetchGames() map[int]*GameInfo {
+func fetchGames() chan *GameInfo {
 	var wg sync.WaitGroup
-	var gamesInfo = util.NewConcurrentMap[int, *GameInfo]()
+	gamesInfo := make(chan *GameInfo)
 	schedule := &domain.Schedule{}
 	_, err := resty.New().R().SetResult(schedule).Get("https://statsapi.web.nhl.com/api/v1/schedule")
 	if err != nil {
@@ -69,12 +62,15 @@ func fetchGames() map[int]*GameInfo {
 	for _, game := range finishedGames {
 		wg.Add(1)
 		go func(game domain.Games) {
-			gamesInfo.Put(game.GamePk, fetchGameInfo(game))
+			gamesInfo <- fetchGameInfo(game)
 			defer wg.Done()
 		}(game)
 	}
-	wg.Wait()
-	return gamesInfo.ToMap()
+	go func() {
+		wg.Wait()
+		close(gamesInfo)
+	}()
+	return gamesInfo
 }
 
 func fetchGameInfo(game domain.Games) *GameInfo {
@@ -87,6 +83,7 @@ func fetchGameInfo(game domain.Games) *GameInfo {
 	}
 	video := result.ExtractGameVideo()
 	return &GameInfo{
+		game.GamePk,
 		video,
 		&TeamInfo{game.Teams.Home.Team.Name, game.Teams.Home.Score},
 		&TeamInfo{game.Teams.Away.Team.Name, game.Teams.Away.Score},
