@@ -87,6 +87,23 @@ func (bot *NHLRecapBot) HandleGames() {
 	})
 }
 
+func (bot *NHLRecapBot) GenerateImage() {
+	bot.Handle("/generate", func(context tele.Context) error {
+		nhl.GeneratePreview()
+		return context.Send("Image was generated")
+	})
+}
+
+func (bot *NHLRecapBot) ShowImage() {
+	bot.Handle("/show", func(context tele.Context) error {
+		photo := &tele.Photo{
+			File:    tele.FromReader(bytes.NewReader(nhl.ShowImage())),
+			Caption: "bla-bla-bla",
+		}
+		return context.Send(photo, tele.ModeMarkdown)
+	})
+}
+
 func GameInfoToTelegramMessage(game *nhl.GameInfo) string {
 	var buffer bytes.Buffer
 	buffer.WriteString(fmt.Sprintf("+%s+\n", strings.Repeat("-", 30)))

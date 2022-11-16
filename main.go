@@ -16,6 +16,8 @@ func main() {
 
 	nhlRecapBot.HandleSubscription()
 	nhlRecapBot.HandleUnsubscription()
+	nhlRecapBot.GenerateImage()
+	nhlRecapBot.ShowImage()
 
 	nhlRecapBot.HandleGames()
 	nhlRecapBot.SendSubscriptions(games)
