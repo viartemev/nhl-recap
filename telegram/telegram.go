@@ -9,7 +9,6 @@ import (
 	"nhl-recap/nhl"
 	"nhl-recap/util"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -44,7 +43,7 @@ func (bot *NHLRecapBot) SendSubscriptions(messages <-chan *nhl.GameInfo) {
 			message := <-messages
 			bot.Users.Range(func(user int64) {
 				photo := &tele.Photo{
-					File: tele.FromReader(bytes.NewReader(nhl.GenerateScoreCard())),
+					File: tele.FromReader(bytes.NewReader(nhl.GenerateScoreCard(message))),
 				}
 				senderOptions := &tele.SendOptions{ReplyMarkup: &tele.ReplyMarkup{InlineKeyboard: [][]tele.InlineButton{
 					{
@@ -87,7 +86,7 @@ func (bot *NHLRecapBot) HandleUnsubscription() {
 func (bot *NHLRecapBot) ShowImage() {
 	bot.Handle("/show", func(context tele.Context) error {
 		photo := &tele.Photo{
-			File: tele.FromReader(bytes.NewReader(nhl.GenerateScoreCard())),
+			File: tele.FromReader(bytes.NewReader(nhl.GenerateScoreCard(nil))),
 		}
 		return context.Send(photo, &tele.SendOptions{ReplyMarkup: &tele.ReplyMarkup{InlineKeyboard: [][]tele.InlineButton{
 			{
