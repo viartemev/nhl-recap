@@ -5,16 +5,13 @@ import (
 	"github.com/go-resty/resty/v2"
 	log "github.com/sirupsen/logrus"
 	"nhl-recap/nhl/domain"
-	"nhl-recap/util"
 	"strconv"
 	"sync"
 	"time"
 )
 
-var games = util.NewConcurrentMap[int, *GameInfo]()
-
 type GameInfo struct {
-	GamePk int
+	GamePk   int
 	Video    string
 	HomeTeam *TeamInfo
 	AwayTeam *TeamInfo
@@ -27,27 +24,22 @@ type TeamInfo struct {
 
 func RecapFetcher() <-chan *GameInfo {
 	out := make(chan *GameInfo)
+	gg := make(map[int]struct{})
 	go func() {
 		for range time.Tick(time.Minute) {
-			log.Info("Fetching gameInfo")
+			log.Info("Fetching games info")
 			g := fetchGames()
 			for element := range g {
-					games.Put(element.GamePk, element)
+				if _, ok := gg[element.GamePk]; !ok {
 					log.Debug(fmt.Sprintf("Sending game: %v", element))
 					out <- element
-				//TODO remove old events
+					gg[element.GamePk] = struct{}{}
+					//TODO clean temporal table
+				}
 			}
 		}
 	}()
 	return out
-}
-
-func GetGames() []*GameInfo {
-	gms := make([]*GameInfo, 0, games.Length())
-	games.Range(func(gameInfo *GameInfo) {
-		gms = append(gms, gameInfo)
-	})
-	return gms
 }
 
 func fetchGames() chan *GameInfo {
@@ -62,7 +54,10 @@ func fetchGames() chan *GameInfo {
 	for _, game := range finishedGames {
 		wg.Add(1)
 		go func(game domain.Games) {
-			gamesInfo <- fetchGameInfo(game)
+			gi := fetchGameInfo(game)
+			if gi != nil {
+				gamesInfo <- fetchGameInfo(game)
+			}
 			defer wg.Done()
 		}(game)
 	}
@@ -82,6 +77,9 @@ func fetchGameInfo(game domain.Games) *GameInfo {
 		log.WithError(err).Error("Can't get game info")
 	}
 	video := result.ExtractGameVideo()
+	if len(video) == 0 {
+		return nil
+	}
 	return &GameInfo{
 		game.GamePk,
 		video,

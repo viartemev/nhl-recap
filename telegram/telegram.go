@@ -72,21 +72,6 @@ func (bot *NHLRecapBot) HandleUnsubscription() {
 	})
 }
 
-func (bot *NHLRecapBot) HandleGames() {
-	bot.Handle("/games", func(c tele.Context) error {
-		log.Debug("Games were requested")
-		var buffer bytes.Buffer
-		games := nhl.GetGames()
-		if len(games) == 0 {
-			return c.Send("Sorry, there are no games", &tele.SendOptions{ParseMode: tele.ModeMarkdown})
-		}
-		for _, game := range games {
-			buffer.WriteString(GameInfoToTelegramMessage(game))
-		}
-		return c.Send(buffer.String(), &tele.SendOptions{ParseMode: tele.ModeMarkdown})
-	})
-}
-
 func GameInfoToTelegramMessage(game *nhl.GameInfo) string {
 	var buffer bytes.Buffer
 	buffer.WriteString(fmt.Sprintf("+%s+\n", strings.Repeat("-", 30)))
