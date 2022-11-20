@@ -8,6 +8,7 @@ import (
 	tele "gopkg.in/telebot.v3"
 	"nhl-recap/nhl"
 	"nhl-recap/util"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -16,7 +17,6 @@ type NHLRecapBot struct {
 	*tele.Bot
 	*TelegramUsers
 }
-
 
 func InitializeBot() *NHLRecapBot {
 	var token string
@@ -43,7 +43,19 @@ func (bot *NHLRecapBot) SendSubscriptions(messages <-chan *nhl.GameInfo) {
 		for {
 			message := <-messages
 			bot.Users.Range(func(user int64) {
-				_, err := bot.Send(&tele.User{ID: user}, GameInfoToTelegramMessage(message), &tele.SendOptions{ParseMode: tele.ModeMarkdown})
+				photo := &tele.Photo{
+					File: tele.FromReader(bytes.NewReader(nhl.GenerateScoreCard())),
+				}
+				senderOptions := &tele.SendOptions{ReplyMarkup: &tele.ReplyMarkup{InlineKeyboard: [][]tele.InlineButton{
+					{
+						tele.InlineButton{
+							Unique: strconv.Itoa(message.GamePk),
+							Text:   fmt.Sprintf("%s v.s. %s", message.HomeTeam.Name, message.AwayTeam.Name),
+							URL:    message.Video,
+						},
+					},
+				}}}
+				_, err := bot.Send(&tele.User{ID: user}, photo, senderOptions)
 				if err != nil {
 					log.WithError(err).Error("Can't send a message")
 				} else {
@@ -72,14 +84,19 @@ func (bot *NHLRecapBot) HandleUnsubscription() {
 	})
 }
 
-func GameInfoToTelegramMessage(game *nhl.GameInfo) string {
-	var buffer bytes.Buffer
-	buffer.WriteString(fmt.Sprintf("+%s+\n", strings.Repeat("-", 30)))
-	buffer.WriteString(fmt.Sprintf("| %-24s  %5d |\n", game.HomeTeam.Name, game.HomeTeam.Score))
-	buffer.WriteString(fmt.Sprintf("|%s|\n", strings.Repeat("-", 30)))
-	buffer.WriteString(fmt.Sprintf("| %-24s  %5d |\n", game.AwayTeam.Name, game.AwayTeam.Score))
-	buffer.WriteString(fmt.Sprintf("|%s|\n", strings.Repeat("-", 30)))
-	buffer.WriteString(fmt.Sprintf("| [%s](%s)  |\n", "Recap", game.Video))
-	buffer.WriteString(fmt.Sprintf("+%s+\n", strings.Repeat("-", 30)))
-	return buffer.String()
+func (bot *NHLRecapBot) ShowImage() {
+	bot.Handle("/show", func(context tele.Context) error {
+		photo := &tele.Photo{
+			File: tele.FromReader(bytes.NewReader(nhl.GenerateScoreCard())),
+		}
+		return context.Send(photo, &tele.SendOptions{ReplyMarkup: &tele.ReplyMarkup{InlineKeyboard: [][]tele.InlineButton{
+			{
+				tele.InlineButton{
+					Unique: "foo_btn",
+					Text:   "Watch",
+					URL:    "https://wsczoominwestus.prod-cdn.clipro.tv/publish/7884995/12395948/58e70ac9-77f9-4111-9c90-53216088cce0.mp4",
+				},
+			},
+		}}})
+	})
 }
