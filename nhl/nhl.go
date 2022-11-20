@@ -56,7 +56,7 @@ func fetchGames() chan *GameInfo {
 		go func(game domain.Games) {
 			gi := fetchGameInfo(game)
 			if gi != nil {
-				gamesInfo <- fetchGameInfo(game)
+				gamesInfo <- gi
 			}
 			defer wg.Done()
 		}(game)
