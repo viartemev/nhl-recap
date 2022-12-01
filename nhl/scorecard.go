@@ -1,51 +1,21 @@
 package nhl
 
 import (
-	"bytes"
-	"fmt"
-	"github.com/golang/freetype"
-	"github.com/golang/freetype/truetype"
-	log "github.com/sirupsen/logrus"
-	"golang.org/x/image/draw"
-	"golang.org/x/image/font"
-	"golang.org/x/image/font/gofont/goregular"
-	"golang.org/x/image/math/fixed"
-	"image"
-	"image/color"
-	"image/png"
-	"os"
+    "bytes"
+    "fmt"
+    "github.com/golang/freetype"
+    "github.com/golang/freetype/truetype"
+    log "github.com/sirupsen/logrus"
+    "golang.org/x/image/draw"
+    "golang.org/x/image/font"
+    "golang.org/x/image/font/gofont/goregular"
+    "golang.org/x/image/math/fixed"
+    "image"
+    "image/color"
+    "image/png"
 )
 
-type Scene struct {
-	Width, Height int
-	Img           *image.RGBA
-}
 
-func NewScene(width int, height int) *Scene {
-	return &Scene{
-		Width:  width,
-		Height: height,
-		Img:    image.NewRGBA(image.Rect(0, 0, width, height)),
-	}
-}
-
-func (s *Scene) EachPixel(colorFunction func(int, int) color.RGBA) {
-	for x := 0; x < s.Width; x++ {
-		for y := 0; y < s.Height; y++ {
-			s.Img.Set(x, y, colorFunction(x, y))
-		}
-	}
-}
-
-func (s *Scene) Save(filename string) {
-	f, err := os.Create(filename)
-
-	if err != nil {
-		panic(err)
-	}
-	defer f.Close()
-	png.Encode(f, s.Img)
-}
 
 func GenerateScoreCard(message *GameInfo) []byte {
 	var width = 300
