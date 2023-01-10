@@ -12,6 +12,10 @@ import (
 	"time"
 )
 
+type TelegramUsers struct {
+	Users *util.Set[int64]
+}
+
 type NHLRecapBot struct {
 	*tele.Bot
 	*TelegramUsers
