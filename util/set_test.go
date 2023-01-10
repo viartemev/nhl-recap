@@ -47,3 +47,20 @@ func TestSet_Range(t *testing.T) {
 		t.Errorf("Set should contains only one element and counter should be 1")
 	}
 }
+
+func TestSet_Concurrent(t *testing.T) {
+	set := NewSet[int]()
+	key := 42
+
+	go func() {
+		set.Add(key)
+	}()
+
+	go func() {
+		set.Delete(key)
+	}()
+
+	go func() {
+		set.Exists(key)
+	}()
+}
