@@ -1,7 +1,5 @@
 package domain
 
-import "fmt"
-
 type Schedule struct {
 	Dates []DateGames
 }
@@ -33,14 +31,6 @@ type Games struct {
 type Teams struct {
 	Away TeamScore `json:"away"`
 	Home TeamScore `json:"home"`
-}
-
-func (t *Teams) TeamsAndWinner() string {
-	if t.Home.Score > t.Away.Score {
-		return fmt.Sprintf("👑%v vs %v", t.Home.Team.Name, t.Away.Team.Name)
-	} else {
-		return fmt.Sprintf("%v vs 👑%v", t.Home.Team.Name, t.Away.Team.Name)
-	}
 }
 
 type TeamScore struct {
