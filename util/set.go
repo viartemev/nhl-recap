@@ -1,6 +1,8 @@
 package util
 
-import "sync"
+import (
+	"sync"
+)
 
 type Set[K comparable] struct {
 	values map[K]bool
@@ -15,6 +17,12 @@ func (s *Set[K]) Add(key K) {
 	s.Lock()
 	defer s.Unlock()
 	s.values[key] = true
+}
+
+func (s *Set[K]) Exists(key K) bool {
+	s.RLock()
+	defer s.RUnlock()
+	return s.values[key]
 }
 
 func (s *Set[K]) Delete(key K) {

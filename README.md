@@ -27,3 +27,14 @@ Usage of nhl_recap:
 ```shell
 docker run -d viartemev/nhl-recap -t {TELEGRAM_BOT_TOKEN}
 ```
+
+## Development
+### Data race validtion:
+```shell
+go test -race
+```
+### Test coverage:
+```shell
+go test -coverprofile=cover.prof
+go tool cover -html=cover.prof
+```
