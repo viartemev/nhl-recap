@@ -3,6 +3,7 @@ package nhl
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"nhl-recap/nhl/domain"
@@ -12,8 +13,8 @@ var clientIsNil = errors.New("client can't be nil")
 var clientError = errors.New("client error")
 
 type NHLClient interface {
-	FetchGame(gameId int) *domain.Game
-	FetchSchedule() *domain.Schedule
+	FetchGame(gameId int) (*domain.Game, error)
+	FetchSchedule() (*domain.Schedule, error)
 }
 
 type NHLHTTPClient struct {
@@ -30,10 +31,10 @@ func (nhl *NHLHTTPClient) FetchSchedule() (*domain.Schedule, error) {
 	}
 	uri := "https://statsapi.web.nhl.com/api/v1/schedule"
 	resp, err := nhl.client.Get(uri)
-	if err == nil || resp.StatusCode != 200 {
+	if err == nil {
 		defer resp.Body.Close()
 	} else {
-		log.WithError(err).Error("Can't get schedule")
+		log.WithError(err).Error("Can't get the schedule")
 		return nil, clientError
 	}
 	schedule := &domain.Schedule{}
@@ -43,4 +44,25 @@ func (nhl *NHLHTTPClient) FetchSchedule() (*domain.Schedule, error) {
 		return nil, errJson
 	}
 	return schedule, nil
+}
+
+func (nhl *NHLHTTPClient) FetchGame(gameId int) (*domain.Game, error) {
+	if nhl.client == nil {
+		return nil, clientIsNil
+	}
+	uri := fmt.Sprintf("https://statsapi.web.nhl.com/api/v1/game/%d/content", gameId)
+	resp, err := nhl.client.Get(uri)
+	if err == nil {
+		defer resp.Body.Close()
+	} else {
+		log.WithError(err).Error("Can't get the game")
+		return nil, clientError
+	}
+	game := &domain.Game{}
+	errJson := json.NewDecoder(resp.Body).Decode(game)
+	if errJson != nil {
+		log.WithError(err).Error("Can't parse game response to json")
+		return nil, errJson
+	}
+	return game, nil
 }

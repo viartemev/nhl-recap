@@ -2,11 +2,9 @@ package nhl
 
 import (
 	"fmt"
-	"github.com/go-resty/resty/v2"
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"nhl-recap/nhl/domain"
-	"strconv"
 	"sync"
 	"time"
 )
@@ -70,14 +68,12 @@ func fetchGames() chan *GameInfo {
 }
 
 func fetchGameInfo(game domain.Games) *GameInfo {
-	result := &domain.Game{}
-	_, err := resty.New().R().SetResult(result).SetPathParams(map[string]string{
-		"gamePk": strconv.Itoa(game.GamePk),
-	}).Get("https://statsapi.web.nhl.com/api/v1/game/{gamePk}/content")
+	nhlClient := NHLHTTPClient{client: &http.Client{Timeout: 3 * time.Second}}
+	fetchedGame, err := nhlClient.FetchGame(game.GamePk)
 	if err != nil {
 		log.WithError(err).Error("Can't get game info")
 	}
-	video := result.ExtractGameVideo()
+	video := fetchedGame.ExtractGameVideo()
 	if len(video) == 0 {
 		return nil
 	}
