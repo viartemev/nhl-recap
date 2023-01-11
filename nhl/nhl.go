@@ -22,12 +22,14 @@ type TeamInfo struct {
 }
 
 type NHL struct {
-	client    NHLClient
-	frequency time.Duration
+	client      NHLClient
+	frequency   time.Duration
+	uniqueGames *util.Set[int]
 }
 
 func NewNHL() *NHL {
-	return &NHL{client: NewNHLClient(), frequency: 30 * time.Second}
+	set := util.NewSet[int]()
+	return &NHL{client: NewNHLClient(), frequency: 30 * time.Second, uniqueGames: set}
 }
 
 func (nhl *NHL) Subscribe(ctx context.Context) <-chan *GameInfo {
@@ -41,7 +43,7 @@ func (nhl *NHL) Subscribe(ctx context.Context) <-chan *GameInfo {
 			select {
 			case <-ticker.C:
 				log.Debug("Tick, starting to request games")
-				uniqueGames := unique(ctx, nhl.fetchScheduledGames(ctx))
+				uniqueGames := unique(ctx, nhl.uniqueGames, nhl.fetchScheduledGames(ctx))
 				for uniqueGame := range uniqueGames {
 					select {
 					case out <- uniqueGame:
@@ -57,9 +59,8 @@ func (nhl *NHL) Subscribe(ctx context.Context) <-chan *GameInfo {
 	return out
 }
 
-func unique(ctx context.Context, in <-chan *GameInfo) <-chan *GameInfo {
+func unique(ctx context.Context, set util.Set[int], in <-chan *GameInfo) <-chan *GameInfo {
 	out := make(chan *GameInfo)
-	set := util.NewSet[int]()
 
 	go func() {
 		defer close(out)
