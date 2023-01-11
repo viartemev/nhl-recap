@@ -35,7 +35,7 @@ func (s *Set[K]) Delete(key K) bool {
 	s.Lock()
 	defer s.Unlock()
 	_, ok := s.values[key]
-	if !ok {
+	if ok {
 		delete(s.values, key)
 		return true
 	}
