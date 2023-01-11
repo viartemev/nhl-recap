@@ -29,7 +29,11 @@ docker run -d viartemev/nhl-recap -t {TELEGRAM_BOT_TOKEN}
 ```
 
 ## Development
-### Data race validtion:
+### Run tests in short mode:
+```shell
+go test -v -short
+```
+### Data race check:
 ```shell
 go test -race
 ```

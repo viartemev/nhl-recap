@@ -1,6 +1,9 @@
 package util
 
-import "testing"
+import (
+	"sync"
+	"testing"
+)
 
 func TestSet_Add_Exists(t *testing.T) {
 	set := NewSet[int]()
@@ -52,15 +55,23 @@ func TestSet_Concurrent(t *testing.T) {
 	set := NewSet[int]()
 	key := 42
 
+	wg := sync.WaitGroup{}
+	wg.Add(3)
+
 	go func() {
+		defer wg.Done()
 		set.Add(key)
 	}()
 
 	go func() {
+		defer wg.Done()
 		set.Delete(key)
 	}()
 
 	go func() {
+		defer wg.Done()
 		set.Exists(key)
 	}()
+
+	wg.Wait()
 }

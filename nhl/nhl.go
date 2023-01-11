@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/go-resty/resty/v2"
 	log "github.com/sirupsen/logrus"
+	"net/http"
 	"nhl-recap/nhl/domain"
 	"strconv"
 	"sync"
@@ -43,10 +44,10 @@ func RecapFetcher() <-chan *GameInfo {
 }
 
 func fetchGames() chan *GameInfo {
+	nhlClient := NHLHTTPClient{client: &http.Client{Timeout: 3 * time.Second}}
 	var wg sync.WaitGroup
 	gamesInfo := make(chan *GameInfo)
-	schedule := &domain.Schedule{}
-	_, err := resty.New().R().SetResult(schedule).Get("https://statsapi.web.nhl.com/api/v1/schedule")
+	schedule, err := nhlClient.FetchSchedule()
 	if err != nil {
 		log.WithError(err).Error("Can't get schedule")
 	}
