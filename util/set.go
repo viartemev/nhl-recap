@@ -27,7 +27,8 @@ func (s *Set[K]) Add(key K) bool {
 func (s *Set[K]) Exists(key K) bool {
 	s.RLock()
 	defer s.RUnlock()
-	return s.values[key]
+	_, ok := s.values[key]
+	return ok
 }
 
 func (s *Set[K]) Delete(key K) {
