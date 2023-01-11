@@ -24,12 +24,11 @@ type TeamInfo struct {
 type NHL struct {
 	client      NHLClient
 	frequency   time.Duration
-	uniqueGames *util.Set[int]
+	uniqueGames util.Set[int]
 }
 
 func NewNHL() *NHL {
-	set := util.NewSet[int]()
-	return &NHL{client: NewNHLClient(), frequency: 30 * time.Second, uniqueGames: set}
+	return &NHL{client: NewNHLClient(), frequency: 30 * time.Second, uniqueGames: *util.NewSet[int]()}
 }
 
 func (nhl *NHL) Subscribe(ctx context.Context) <-chan *GameInfo {
