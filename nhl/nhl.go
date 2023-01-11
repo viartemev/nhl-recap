@@ -1,10 +1,10 @@
 package nhl
 
 import (
-	"fmt"
+	"context"
 	log "github.com/sirupsen/logrus"
-	"net/http"
 	"nhl-recap/nhl/domain"
+	"nhl-recap/util"
 	"sync"
 	"time"
 )
@@ -21,55 +21,101 @@ type TeamInfo struct {
 	Score int
 }
 
-func RecapFetcher() <-chan *GameInfo {
+type NHL struct {
+	client    NHLClient
+	frequency time.Duration
+}
+
+func NewNHL() *NHL {
+	return &NHL{client: NewNHLClient(), frequency: 30 * time.Second}
+}
+
+func (nhl *NHL) Subscribe(ctx context.Context) <-chan *GameInfo {
 	out := make(chan *GameInfo)
-	gg := make(map[int]struct{})
+	ticker := time.NewTicker(nhl.frequency)
 	go func() {
-		for range time.Tick(time.Minute) {
-			log.Info("Fetching games info")
-			g := fetchGames()
-			for element := range g {
-				if _, ok := gg[element.GamePk]; !ok {
-					log.Debug(fmt.Sprintf("Sending game: %v", element))
-					out <- element
-					gg[element.GamePk] = struct{}{}
-					//TODO clean temporal table
+		defer close(out)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ticker.C:
+				log.Debug("Tick, starting to request games")
+				uniqueGames := unique(ctx, nhl.fetchScheduledGames(ctx))
+				for uniqueGame := range uniqueGames {
+					select {
+					case out <- uniqueGame:
+					case <-ctx.Done():
+						return
+					}
 				}
+			case <-ctx.Done():
+				return
 			}
 		}
 	}()
 	return out
 }
 
-func fetchGames() chan *GameInfo {
-	nhlClient := NHLHTTPClient{client: &http.Client{Timeout: 3 * time.Second}}
+func unique(ctx context.Context, in <-chan *GameInfo) <-chan *GameInfo {
+	out := make(chan *GameInfo)
+	set := util.NewSet[int]()
+
+	go func() {
+		defer close(out)
+		for element := range in {
+			if !set.Add(element.GamePk) {
+				continue
+			}
+			select {
+			case out <- element:
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+
+	return out
+}
+
+func (nhl *NHL) fetchScheduledGames(ctx context.Context) chan *GameInfo {
+	out := make(chan *GameInfo)
 	var wg sync.WaitGroup
-	gamesInfo := make(chan *GameInfo)
-	schedule, err := nhlClient.FetchSchedule()
+
+	schedule, err := nhl.client.FetchSchedule()
 	if err != nil {
 		log.WithError(err).Error("Can't get schedule")
 	}
 	finishedGames := schedule.ExtractFinishedGames()
+	log.Debugf("Got schedule, cotains %d finished games", len(finishedGames))
+
 	for _, game := range finishedGames {
 		wg.Add(1)
 		go func(game domain.Games) {
-			gi := fetchGameInfo(game)
-			if gi != nil {
-				gamesInfo <- gi
-			}
 			defer wg.Done()
+
+			gameInfo := nhl.fetchGameInfo(game)
+			log.Debugf("Got gameInfo %d", gameInfo.GamePk)
+			if gameInfo != nil {
+				select {
+				case out <- gameInfo:
+				case <-ctx.Done():
+					return
+				}
+			}
 		}(game)
 	}
+
 	go func() {
 		wg.Wait()
-		close(gamesInfo)
+		close(out)
 	}()
-	return gamesInfo
+
+	return out
 }
 
-func fetchGameInfo(game domain.Games) *GameInfo {
-	nhlClient := NHLHTTPClient{client: &http.Client{Timeout: 3 * time.Second}}
-	fetchedGame, err := nhlClient.FetchGame(game.GamePk)
+func (nhl *NHL) fetchGameInfo(game domain.Games) *GameInfo {
+	fetchedGame, err := nhl.client.FetchGame(game.GamePk)
 	if err != nil {
 		log.WithError(err).Error("Can't get game info")
 	}

@@ -13,10 +13,15 @@ func NewSet[K comparable]() *Set[K] {
 	return &Set[K]{values: make(map[K]bool)}
 }
 
-func (s *Set[K]) Add(key K) {
+func (s *Set[K]) Add(key K) bool {
 	s.Lock()
 	defer s.Unlock()
-	s.values[key] = true
+	_, ok := s.values[key]
+	if !ok {
+		s.values[key] = true
+		return true
+	}
+	return false
 }
 
 func (s *Set[K]) Exists(key K) bool {

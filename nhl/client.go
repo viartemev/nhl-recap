@@ -7,6 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"nhl-recap/nhl/domain"
+	"time"
 )
 
 var clientIsNil = errors.New("client can't be nil")
@@ -15,6 +16,10 @@ var clientError = errors.New("client error")
 type NHLClient interface {
 	FetchGame(gameId int) (*domain.Game, error)
 	FetchSchedule() (*domain.Schedule, error)
+}
+
+func NewNHLClient() NHLClient {
+	return &NHLHTTPClient{client: &http.Client{Timeout: 3 * time.Second}}
 }
 
 type NHLHTTPClient struct {
