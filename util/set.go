@@ -31,10 +31,15 @@ func (s *Set[K]) Exists(key K) bool {
 	return ok
 }
 
-func (s *Set[K]) Delete(key K) {
+func (s *Set[K]) Delete(key K) bool {
 	s.Lock()
 	defer s.Unlock()
-	delete(s.values, key)
+	_, ok := s.values[key]
+	if !ok {
+		delete(s.values, key)
+		return true
+	}
+	return false
 }
 
 func (s *Set[K]) Range(fun func(value K)) {
