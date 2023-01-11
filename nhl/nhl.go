@@ -2,11 +2,12 @@ package nhl
 
 import (
 	"context"
-	log "github.com/sirupsen/logrus"
 	"nhl-recap/nhl/domain"
 	"nhl-recap/util"
 	"sync"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type GameInfo struct {
@@ -42,7 +43,7 @@ func (nhl *NHL) Subscribe(ctx context.Context) <-chan *GameInfo {
 			select {
 			case <-ticker.C:
 				log.Debug("Tick, starting to request games")
-				uniqueGames := unique(ctx, nhl.uniqueGames, nhl.fetchScheduledGames(ctx))
+				uniqueGames := unique(ctx, &nhl.uniqueGames, nhl.fetchScheduledGames(ctx))
 				for uniqueGame := range uniqueGames {
 					select {
 					case out <- uniqueGame:
@@ -58,7 +59,7 @@ func (nhl *NHL) Subscribe(ctx context.Context) <-chan *GameInfo {
 	return out
 }
 
-func unique(ctx context.Context, set util.Set[int], in <-chan *GameInfo) <-chan *GameInfo {
+func unique(ctx context.Context, set *util.Set[int], in <-chan *GameInfo) <-chan *GameInfo {
 	out := make(chan *GameInfo)
 
 	go func() {
