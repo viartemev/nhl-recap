@@ -43,7 +43,9 @@ func (nhl *NHL) Subscribe(ctx context.Context) <-chan *GameInfo {
 			select {
 			case <-ticker.C:
 				log.Debug("Tick, starting to request games")
-				uniqueGames := unique(ctx, &nhl.uniqueGames, nhl.fetchScheduledGames(ctx))
+				uniqueGames := util.Filter(ctx, nhl.fetchScheduledGames(ctx), func(info *GameInfo) bool {
+					return nhl.uniqueGames.Add(info.GamePk)
+				})
 				for uniqueGame := range uniqueGames {
 					select {
 					case out <- uniqueGame:
@@ -56,26 +58,6 @@ func (nhl *NHL) Subscribe(ctx context.Context) <-chan *GameInfo {
 			}
 		}
 	}()
-	return out
-}
-
-func unique(ctx context.Context, set *util.Set[int], in <-chan *GameInfo) <-chan *GameInfo {
-	out := make(chan *GameInfo)
-
-	go func() {
-		defer close(out)
-		for element := range in {
-			if !set.Add(element.GamePk) {
-				continue
-			}
-			select {
-			case out <- element:
-			case <-ctx.Done():
-				return
-			}
-		}
-	}()
-
 	return out
 }
 
