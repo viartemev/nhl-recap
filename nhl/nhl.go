@@ -2,11 +2,13 @@ package nhl
 
 import (
 	"context"
+	"errors"
 	log "github.com/sirupsen/logrus"
 	"nhl-recap/nhl/domain"
 	"nhl-recap/util"
-	"sync"
 )
+
+var scheduleError = errors.New("can't get schedule")
 
 type GameInfo struct {
 	GamePk   int
@@ -34,44 +36,17 @@ type NHLFetcher struct {
 }
 
 func (f *NHLFetcher) Fetch(ctx context.Context) chan *GameInfo {
-	games := f.fetchScheduledGames(ctx)
-	return util.Filter(ctx, games, func(info *GameInfo) bool { return f.uniqueGames.Add(info.GamePk) })
-}
-
-func (f *NHLFetcher) fetchScheduledGames(ctx context.Context) chan *GameInfo {
-	out := make(chan *GameInfo)
-	var wg sync.WaitGroup
-
+	log.Info("Requesting nhl info")
 	schedule, err := f.client.FetchSchedule()
+	log.Info(schedule)
 	if err != nil {
-		log.WithError(err).Error("Can't get schedule")
+		//TODO handle this error
 	}
 	finishedGames := schedule.ExtractFinishedGames()
-	log.Debugf("Got schedule, cotains %d finished games", len(finishedGames))
-
-	for _, game := range finishedGames {
-		wg.Add(1)
-		go func(game domain.Games) {
-			defer wg.Done()
-
-			gameInfo := f.fetchGameInfo(game)
-			log.Debugf("Got gameInfo %d", gameInfo.GamePk)
-			if gameInfo != nil {
-				select {
-				case out <- gameInfo:
-				case <-ctx.Done():
-					return
-				}
-			}
-		}(game)
-	}
-
-	go func() {
-		wg.Wait()
-		close(out)
-	}()
-
-	return out
+	log.Infof("Got %d finished games", len(finishedGames))
+	//TODO fix errors in channel
+	games := util.FanIn(ctx, finishedGames, func(games domain.Games) *GameInfo { return f.fetchGameInfo(games) })
+	return util.Filter(ctx, games, func(info *GameInfo) bool { return f.uniqueGames.Add(info.GamePk) })
 }
 
 func (f *NHLFetcher) fetchGameInfo(game domain.Games) *GameInfo {
