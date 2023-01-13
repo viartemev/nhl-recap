@@ -5,9 +5,11 @@ import (
 	log "github.com/sirupsen/logrus"
 	"nhl-recap/nhl"
 	"nhl-recap/telegram"
+	"nhl-recap/util"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 )
 
 func main() {
@@ -16,16 +18,14 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	gracefulShutdown(cancel)
 
-	nhlRecapBot := telegram.InitializeBot()
 	nhl := nhl.NewNHL()
-	games := nhl.Subscribe(ctx)
+	subscription := util.NewSubscription(ctx, nhl.Fetcher, time.NewTicker(30*time.Second))
 
+	nhlRecapBot := telegram.InitializeBot()
 	nhlRecapBot.HandleSubscription()
 	nhlRecapBot.HandleUnsubscription()
-
+	nhlRecapBot.SendSubscriptions(subscription)
 	nhlRecapBot.ShowImage()
-
-	nhlRecapBot.SendSubscriptions(games)
 
 	log.Info("NHL Recap telegram nhlRecapBot is starting...")
 	nhlRecapBot.Start()

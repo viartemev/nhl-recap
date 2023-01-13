@@ -2,12 +2,10 @@ package nhl
 
 import (
 	"context"
+	log "github.com/sirupsen/logrus"
 	"nhl-recap/nhl/domain"
 	"nhl-recap/util"
 	"sync"
-	"time"
-
-	log "github.com/sirupsen/logrus"
 )
 
 type GameInfo struct {
@@ -23,49 +21,28 @@ type TeamInfo struct {
 }
 
 type NHL struct {
-	client      NHLClient
-	frequency   time.Duration
-	uniqueGames util.Set[int]
+	Fetcher util.Fetcher[*GameInfo]
 }
 
 func NewNHL() *NHL {
-	return &NHL{client: NewNHLClient(), frequency: 30 * time.Second, uniqueGames: *util.NewSet[int]()}
+	return &NHL{Fetcher: &NHLFetcher{client: NewNHLClient(), uniqueGames: *util.NewSet[int]()}}
 }
 
-func (nhl *NHL) Subscribe(ctx context.Context) <-chan *GameInfo {
-	out := make(chan *GameInfo)
-	ticker := time.NewTicker(nhl.frequency)
-	go func() {
-		defer close(out)
-		defer ticker.Stop()
-
-		for {
-			select {
-			case <-ticker.C:
-				log.Debug("Tick, starting to request games")
-				uniqueGames := util.Filter(ctx, nhl.fetchScheduledGames(ctx), func(info *GameInfo) bool {
-					return nhl.uniqueGames.Add(info.GamePk)
-				})
-				for uniqueGame := range uniqueGames {
-					select {
-					case out <- uniqueGame:
-					case <-ctx.Done():
-						return
-					}
-				}
-			case <-ctx.Done():
-				return
-			}
-		}
-	}()
-	return out
+type NHLFetcher struct {
+	client      NHLClient
+	uniqueGames util.Set[int]
 }
 
-func (nhl *NHL) fetchScheduledGames(ctx context.Context) chan *GameInfo {
+func (f *NHLFetcher) Fetch(ctx context.Context) chan *GameInfo {
+	games := f.fetchScheduledGames(ctx)
+	return util.Filter(ctx, games, func(info *GameInfo) bool { return f.uniqueGames.Add(info.GamePk) })
+}
+
+func (f *NHLFetcher) fetchScheduledGames(ctx context.Context) chan *GameInfo {
 	out := make(chan *GameInfo)
 	var wg sync.WaitGroup
 
-	schedule, err := nhl.client.FetchSchedule()
+	schedule, err := f.client.FetchSchedule()
 	if err != nil {
 		log.WithError(err).Error("Can't get schedule")
 	}
@@ -77,7 +54,7 @@ func (nhl *NHL) fetchScheduledGames(ctx context.Context) chan *GameInfo {
 		go func(game domain.Games) {
 			defer wg.Done()
 
-			gameInfo := nhl.fetchGameInfo(game)
+			gameInfo := f.fetchGameInfo(game)
 			log.Debugf("Got gameInfo %d", gameInfo.GamePk)
 			if gameInfo != nil {
 				select {
@@ -97,8 +74,8 @@ func (nhl *NHL) fetchScheduledGames(ctx context.Context) chan *GameInfo {
 	return out
 }
 
-func (nhl *NHL) fetchGameInfo(game domain.Games) *GameInfo {
-	fetchedGame, err := nhl.client.FetchGame(game.GamePk)
+func (f *NHLFetcher) fetchGameInfo(game domain.Games) *GameInfo {
+	fetchedGame, err := f.client.FetchGame(game.GamePk)
 	if err != nil {
 		log.WithError(err).Error("Can't get game info")
 	}
