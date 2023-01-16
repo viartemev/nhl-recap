@@ -5,25 +5,49 @@ import (
 	"testing"
 )
 
-func TestSet_Add_Exists(t *testing.T) {
+func TestSet_Add_If_Element_Not_Exists(t *testing.T) {
 	set := NewSet[int]()
 	key := 42
-	set.Add(key)
+	if !set.Add(key) {
+		t.Errorf("key %d should be added", key)
+	}
 	if !set.Exists(key) {
 		t.Errorf("key %d doesn't exist in set", key)
 	}
 }
 
-func TestSet_Delete(t *testing.T) {
+func TestSet_Add_If_Element_Exists(t *testing.T) {
+	set := NewSet[int]()
+	key := 42
+	set.Add(key)
+	if set.Add(key) {
+		t.Errorf("key %d shouldn't be added", key)
+	}
+	if !set.Exists(key) {
+		t.Errorf("key %d doesn't exist in set", key)
+	}
+}
+
+func TestSet_Delete_If_Element_Exists(t *testing.T) {
 	set := NewSet[int]()
 	key := 42
 	set.Add(key)
 	if !set.Exists(key) {
 		t.Errorf("key %d doesn't exist in set", key)
 	}
-	set.Delete(key)
+	if !set.Delete(key) {
+		t.Errorf("key %d should be deleted", key)
+	}
 	if set.Exists(key) {
 		t.Errorf("key %d exists in set, but shouldn't", key)
+	}
+}
+
+func TestSet_Delete_If_Element_Not_Exists(t *testing.T) {
+	set := NewSet[int]()
+	key := 42
+	if set.Delete(key) {
+		t.Errorf("key %d should be deleted", key)
 	}
 }
 

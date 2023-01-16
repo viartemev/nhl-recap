@@ -41,14 +41,11 @@ func InitializeBot() *NHLRecapBot {
 	return &NHLRecapBot{bot, users}
 }
 
-func (bot *NHLRecapBot) SendSubscriptions(messages <-chan *nhl.GameInfo) {
+func (bot *NHLRecapBot) SendSubscriptions(subscription util.Subscription[*nhl.GameInfo]) {
 	go func() {
-		for {
-			message := <-messages
+		for message := range subscription.Updates() {
 			bot.Users.Range(func(user int64) {
-				photo := &tele.Photo{
-					File: tele.FromReader(bytes.NewReader(nhl.GenerateScoreCard(message))),
-				}
+				photo := &tele.Photo{File: tele.FromReader(bytes.NewReader(nhl.GenerateScoreCard(message)))}
 				senderOptions := &tele.SendOptions{ReplyMarkup: &tele.ReplyMarkup{InlineKeyboard: [][]tele.InlineButton{
 					{
 						tele.InlineButton{

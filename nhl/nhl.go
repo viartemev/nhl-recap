@@ -1,13 +1,14 @@
 package nhl
 
 import (
-	"fmt"
+	"context"
+	"errors"
 	log "github.com/sirupsen/logrus"
-	"net/http"
 	"nhl-recap/nhl/domain"
-	"sync"
-	"time"
+	"nhl-recap/util"
 )
+
+var scheduleError = errors.New("can't get schedule")
 
 type GameInfo struct {
 	GamePk   int
@@ -21,55 +22,35 @@ type TeamInfo struct {
 	Score int
 }
 
-func RecapFetcher() <-chan *GameInfo {
-	out := make(chan *GameInfo)
-	gg := make(map[int]struct{})
-	go func() {
-		for range time.Tick(time.Minute) {
-			log.Info("Fetching games info")
-			g := fetchGames()
-			for element := range g {
-				if _, ok := gg[element.GamePk]; !ok {
-					log.Debug(fmt.Sprintf("Sending game: %v", element))
-					out <- element
-					gg[element.GamePk] = struct{}{}
-					//TODO clean temporal table
-				}
-			}
-		}
-	}()
-	return out
+type NHL struct {
+	Fetcher util.Fetcher[*GameInfo]
 }
 
-func fetchGames() chan *GameInfo {
-	nhlClient := NHLHTTPClient{client: &http.Client{Timeout: 3 * time.Second}}
-	var wg sync.WaitGroup
-	gamesInfo := make(chan *GameInfo)
-	schedule, err := nhlClient.FetchSchedule()
+func NewNHL() *NHL {
+	return &NHL{Fetcher: &NHLFetcher{client: NewNHLClient(), uniqueGames: util.NewSet[int]()}}
+}
+
+type NHLFetcher struct {
+	client      NHLClient
+	uniqueGames *util.Set[int]
+}
+
+func (f *NHLFetcher) Fetch(ctx context.Context) chan *GameInfo {
+	log.Info("Requesting nhl info")
+	schedule, err := f.client.FetchSchedule()
+	log.Info(schedule)
 	if err != nil {
-		log.WithError(err).Error("Can't get schedule")
+		//TODO handle this error
 	}
 	finishedGames := schedule.ExtractFinishedGames()
-	for _, game := range finishedGames {
-		wg.Add(1)
-		go func(game domain.Games) {
-			gi := fetchGameInfo(game)
-			if gi != nil {
-				gamesInfo <- gi
-			}
-			defer wg.Done()
-		}(game)
-	}
-	go func() {
-		wg.Wait()
-		close(gamesInfo)
-	}()
-	return gamesInfo
+	log.Infof("Got %d finished games", len(finishedGames))
+	//TODO fix errors in channel
+	games := util.FanIn(ctx, finishedGames, func(games domain.Games) *GameInfo { return f.fetchGameInfo(games) })
+	return util.Filter(ctx, games, func(info *GameInfo) bool { return f.uniqueGames.Add(info.GamePk) })
 }
 
-func fetchGameInfo(game domain.Games) *GameInfo {
-	nhlClient := NHLHTTPClient{client: &http.Client{Timeout: 3 * time.Second}}
-	fetchedGame, err := nhlClient.FetchGame(game.GamePk)
+func (f *NHLFetcher) fetchGameInfo(game domain.Games) *GameInfo {
+	fetchedGame, err := f.client.FetchGame(game.GamePk)
 	if err != nil {
 		log.WithError(err).Error("Can't get game info")
 	}

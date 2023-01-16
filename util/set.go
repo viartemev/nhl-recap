@@ -13,22 +13,33 @@ func NewSet[K comparable]() *Set[K] {
 	return &Set[K]{values: make(map[K]bool)}
 }
 
-func (s *Set[K]) Add(key K) {
+func (s *Set[K]) Add(key K) bool {
 	s.Lock()
 	defer s.Unlock()
-	s.values[key] = true
+	_, ok := s.values[key]
+	if !ok {
+		s.values[key] = true
+		return true
+	}
+	return false
 }
 
 func (s *Set[K]) Exists(key K) bool {
 	s.RLock()
 	defer s.RUnlock()
-	return s.values[key]
+	_, ok := s.values[key]
+	return ok
 }
 
-func (s *Set[K]) Delete(key K) {
+func (s *Set[K]) Delete(key K) bool {
 	s.Lock()
 	defer s.Unlock()
-	delete(s.values, key)
+	_, ok := s.values[key]
+	if ok {
+		delete(s.values, key)
+		return true
+	}
+	return false
 }
 
 func (s *Set[K]) Range(fun func(value K)) {
