@@ -27,12 +27,12 @@ type NHL struct {
 }
 
 func NewNHL() *NHL {
-	return &NHL{Fetcher: &NHLFetcher{client: NewNHLClient(), uniqueGames: *util.NewSet[int]()}}
+	return &NHL{Fetcher: &NHLFetcher{client: NewNHLClient(), uniqueGames: util.NewSet[int]()}}
 }
 
 type NHLFetcher struct {
 	client      NHLClient
-	uniqueGames util.Set[int]
+	uniqueGames *util.Set[int]
 }
 
 func (f *NHLFetcher) Fetch(ctx context.Context) chan *GameInfo {
