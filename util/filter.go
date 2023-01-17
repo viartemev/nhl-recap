@@ -9,12 +9,20 @@ func Filter[K any](ctx context.Context, in chan K, predicate func(element K) boo
 
 	go func() {
 		defer close(out)
-		for element := range in {
-			if !predicate(element) {
-				continue
-			}
+		for {
 			select {
-			case out <- element:
+			case element, ok := <-in:
+				if !ok {
+					return
+				}
+				if !predicate(element) {
+					continue
+				}
+				select {
+				case out <- element:
+				case <-ctx.Done():
+					return
+				}
 			case <-ctx.Done():
 				return
 			}
