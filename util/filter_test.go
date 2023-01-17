@@ -35,6 +35,10 @@ func TestFilter_Empty_In_Channel_Cancelation(t *testing.T) {
 	if len(got) != 0 {
 		t.Errorf("Filtered slice should be empty")
 	}
+	_, ok := <-filtered
+	if ok {
+		t.Errorf("Channel should be closed")
+	}
 }
 
 func TestFilter_Empty_Out_Channel_Cancelation(t *testing.T) {
@@ -48,6 +52,10 @@ func TestFilter_Empty_Out_Channel_Cancelation(t *testing.T) {
 	cancelFunc()
 	if len(got) != 1 {
 		t.Errorf("Filtered slice should be empty")
+	}
+	_, ok := <-filtered
+	if ok {
+		t.Errorf("Channel should be closed")
 	}
 }
 
