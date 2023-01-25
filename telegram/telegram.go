@@ -44,26 +44,31 @@ func InitializeBot() *NHLRecapBot {
 func (bot *NHLRecapBot) SendSubscriptions(subscription util.Subscription[*nhl.GameInfo]) {
 	go func() {
 		for message := range subscription.Updates() {
-			bot.Users.Range(func(user int64) {
-				photo := &tele.Photo{File: tele.FromReader(bytes.NewReader(nhl.GenerateScoreCard(message)))}
-				senderOptions := &tele.SendOptions{ReplyMarkup: &tele.ReplyMarkup{InlineKeyboard: [][]tele.InlineButton{
-					{
-						tele.InlineButton{
-							Unique: strconv.Itoa(message.GamePk),
-							Text:   fmt.Sprintf("%s v.s. %s", message.HomeTeam.Name, message.AwayTeam.Name),
-							URL:    message.Video,
-						},
-					},
-				}}}
-				_, err := bot.Send(&tele.User{ID: user}, photo, senderOptions)
-				if err != nil {
-					log.WithError(err).Error("Can't send a message")
-				} else {
-					log.Debug("A message has sent")
-				}
-			})
+			scoreCard := tele.FromReader(bytes.NewReader(nhl.GenerateScoreCard(message)))
+			bot.Users.Range(sendScoreCard(scoreCard, message, bot))
 		}
 	}()
+}
+
+func sendScoreCard(scoreCard tele.File, message *nhl.GameInfo, bot *NHLRecapBot) func(user int64) {
+	return func(user int64) {
+		photo := &tele.Photo{File: scoreCard}
+		senderOptions := &tele.SendOptions{ReplyMarkup: &tele.ReplyMarkup{InlineKeyboard: [][]tele.InlineButton{
+			{
+				tele.InlineButton{
+					Unique: strconv.Itoa(message.GamePk),
+					Text:   fmt.Sprintf("%s v.s. %s", message.HomeTeam.Name, message.AwayTeam.Name),
+					URL:    message.Video,
+				},
+			},
+		}}}
+		_, err := bot.Send(&tele.User{ID: user}, photo, senderOptions)
+		if err != nil {
+			log.WithError(err).Error("Can't send the message")
+		} else {
+			log.Debug("The message has sent")
+		}
+	}
 }
 
 func (bot *NHLRecapBot) HandleSubscription() {
