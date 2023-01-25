@@ -49,25 +49,26 @@ func drawText(canvas *image.RGBA, message *GameInfo) error {
 		}),
 	}
 
-	drawHomeTeam(canvas, message, fontDrawer)
-	drawAwayTeam(canvas, message, fontDrawer)
+	drawHomeTeam(canvas, nil, message, fontDrawer)
+	drawAwayTeam(canvas, nil, message, fontDrawer)
 
 	return err
 }
 
-func drawAwayTeam(canvas *image.RGBA, message *GameInfo, fontDrawer *font.Drawer) {
-	// Away team
+func drawAwayTeam(background *image.RGBA, logo *image.RGBA, message *GameInfo, fontDrawer *font.Drawer) {
+	// Draw team name
 	awayTeamTextBound, _ := fontDrawer.BoundString(message.AwayTeam.Name)
 	awayTeamXPosition := fixed.I(90)
 	awayTeamTextHeight := awayTeamTextBound.Max.Y - awayTeamTextBound.Min.Y
-	awayTeamYPosition := fixed.I(canvas.Rect.Max.Y) - fixed.I(awayTeamTextHeight.Ceil())
+	awayTeamYPosition := fixed.I(background.Rect.Max.Y) - fixed.I(awayTeamTextHeight.Ceil())
 	fontDrawer.Dot = fixed.Point26_6{
 		X: awayTeamXPosition,
 		Y: awayTeamYPosition,
 	}
 	fontDrawer.DrawString(message.AwayTeam.Name)
 
-	awayTeamXPosition = fixed.I(canvas.Rect.Max.X - 50)
+	// Draw team score
+	awayTeamXPosition = fixed.I(background.Rect.Max.X - 50)
 	fontDrawer.Dot = fixed.Point26_6{
 		X: awayTeamXPosition,
 		Y: awayTeamYPosition,
@@ -75,19 +76,20 @@ func drawAwayTeam(canvas *image.RGBA, message *GameInfo, fontDrawer *font.Drawer
 	fontDrawer.DrawString(strconv.Itoa(message.AwayTeam.Score))
 }
 
-func drawHomeTeam(canvas *image.RGBA, message *GameInfo, fontDrawer *font.Drawer) {
-	// Home team
+func drawHomeTeam(background *image.RGBA, logo *image.RGBA, message *GameInfo, fontDrawer *font.Drawer) {
+	// Draw team name
 	homeTeamTextBound, _ := fontDrawer.BoundString(message.HomeTeam.Name)
 	homeTeamXPosition := fixed.I(90)
 	homeTeamTextHeight := homeTeamTextBound.Max.Y - homeTeamTextBound.Min.Y
-	homeTeamYPosition := fixed.I((canvas.Rect.Max.Y)-homeTeamTextHeight.Ceil())/4 + fixed.I(homeTeamTextHeight.Ceil())
+	homeTeamYPosition := fixed.I((background.Rect.Max.Y)-homeTeamTextHeight.Ceil())/4 + fixed.I(homeTeamTextHeight.Ceil())
 	fontDrawer.Dot = fixed.Point26_6{
 		X: homeTeamXPosition,
 		Y: homeTeamYPosition,
 	}
 	fontDrawer.DrawString(message.HomeTeam.Name)
 
-	homeTeamXPosition = fixed.I(canvas.Rect.Max.X - 50)
+	// Draw team score
+	homeTeamXPosition = fixed.I(background.Rect.Max.X - 50)
 	fontDrawer.Dot = fixed.Point26_6{
 		X: homeTeamXPosition,
 		Y: homeTeamYPosition,

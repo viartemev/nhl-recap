@@ -20,7 +20,7 @@ func TestGamesUnmarshalling(t *testing.T) {
 		},
 		AwayTeam: &TeamInfo{
 			Name:  "PHI",
-			Score: 1,
+			Score: 3,
 		},
 	}
 	scoreCard := GenerateScoreCard(game)
