@@ -21,13 +21,52 @@ func TestFilter_Even_Numbers(t *testing.T) {
 	}
 }
 
-func TestFilter_Empty_In_Channel_Cancelation(t *testing.T) {
+func TestAndPredicate_Should_Return_False(t *testing.T) {
+	tr := func(number int) bool { return true }
+	fl := func(number int) bool { return false }
+	and := And(tr, fl)
+	if and(0) != false {
+		t.Errorf("should be false")
+	}
+}
+
+func TestAndPredicate_Should_Return_True(t *testing.T) {
+	tr1 := func(number int) bool { return true }
+	tr2 := func(number int) bool { return true }
+	and := And(tr1, tr2)
+	if and(0) != true {
+		t.Errorf("should be false")
+	}
+}
+
+func TestFilter_Empty_In_Channel_Cancelation_By_Context(t *testing.T) {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	got := make([]int, 0)
 	filtered := Filter(ctx, make(chan int), evenNumbers)
 	go func() {
 		time.Sleep(300 * time.Millisecond)
 		cancelFunc()
+	}()
+	for i := range filtered {
+		got = append(got, i)
+	}
+	if len(got) != 0 {
+		t.Errorf("Filtered slice should be empty")
+	}
+	_, ok := <-filtered
+	if ok {
+		t.Errorf("Channel should be closed")
+	}
+}
+
+func TestFilter_Empty_In_Channel_Cancelation(t *testing.T) {
+	ctx := context.Background()
+	got := make([]int, 0)
+	in := make(chan int)
+	filtered := Filter(ctx, in, evenNumbers)
+	go func() {
+		time.Sleep(300 * time.Millisecond)
+		close(in)
 	}()
 	for i := range filtered {
 		got = append(got, i)
