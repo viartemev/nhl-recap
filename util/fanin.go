@@ -9,7 +9,7 @@ func FanIn[K any, V any](ctx context.Context, arr []K, fn func(element K) V) cha
 	out := make(chan V)
 	var wg sync.WaitGroup
 
-	for _, game := range arr {
+	for _, el := range arr {
 		wg.Add(1)
 		go func(element K) {
 			defer wg.Done()
@@ -19,7 +19,7 @@ func FanIn[K any, V any](ctx context.Context, arr []K, fn func(element K) V) cha
 			case <-ctx.Done():
 				return
 			}
-		}(game)
+		}(el)
 	}
 
 	go func() {
