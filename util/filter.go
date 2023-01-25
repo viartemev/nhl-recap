@@ -17,17 +17,6 @@ func And[K any](predicates ...predicate[K]) predicate[K] {
 	}
 }
 
-// Or returns predicate. Predicate returns true if any of passed predicates returned true
-func Or[K any](predicates ...predicate[K]) predicate[K] {
-	return func(element K) bool {
-		var result bool
-		for _, p := range predicates {
-			result = result || p(element)
-		}
-		return result
-	}
-}
-
 func Filter[K any](ctx context.Context, in chan K, predicate predicate[K]) chan K {
 	out := make(chan K)
 
