@@ -2,11 +2,12 @@ package util
 
 import (
 	"context"
+	log "github.com/sirupsen/logrus"
 	"time"
 )
 
 type Fetcher[K any] interface {
-	Fetch(ctx context.Context) chan K
+	Fetch(ctx context.Context) (chan K, error)
 }
 
 type Subscription[K any] interface {
@@ -36,7 +37,12 @@ func (s *sub[K]) serve(ctx context.Context, ticker *time.Ticker) {
 	for {
 		select {
 		case <-ticker.C:
-			for res := range s.fetcher.Fetch(ctx) {
+			result, err := s.fetcher.Fetch(ctx)
+			if err != nil {
+				log.WithError(err).Errorf("Got an error from fetch method")
+				break
+			}
+			for res := range result {
 				select {
 				case s.updates <- res:
 				case <-ctx.Done():

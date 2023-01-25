@@ -71,7 +71,7 @@ func TestSet_Range(t *testing.T) {
 	})
 
 	if counter != 1 {
-		t.Errorf("Set should contains only one element and counter should be 1")
+		t.Errorf("Set should contains only one element And counter should be 1")
 	}
 }
 
