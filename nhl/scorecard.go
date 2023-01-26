@@ -2,9 +2,11 @@ package nhl
 
 import (
 	"bytes"
+	log "github.com/sirupsen/logrus"
 	"image"
 	"image/color"
 	"image/png"
+	"os"
 	"strconv"
 
 	"github.com/golang/freetype"
@@ -49,13 +51,27 @@ func drawText(canvas *image.RGBA, message *GameInfo) error {
 		}),
 	}
 
-	drawHomeTeam(canvas, nil, message, fontDrawer)
-	drawAwayTeam(canvas, nil, message, fontDrawer)
+	img, err := os.Open("logo.png")
+	if err != nil {
+		log.Fatalf("failed to open: %s", err)
+	}
+
+	logo, err := png.Decode(img)
+	if err != nil {
+		log.Fatalf("failed to decode: %s", err)
+	}
+	defer img.Close()
+
+	drawHomeTeam(canvas, logo, message, fontDrawer)
+	drawAwayTeam(canvas, logo, message, fontDrawer)
 
 	return err
 }
 
-func drawAwayTeam(background *image.RGBA, logo *image.RGBA, message *GameInfo, fontDrawer *font.Drawer) {
+func drawAwayTeam(background *image.RGBA, logo image.Image, message *GameInfo, fontDrawer *font.Drawer) {
+	// Draw team logo
+	draw.Draw(background, logo.Bounds().Add(image.Point{X: 20, Y: 15}), logo, image.Point{}, draw.Over)
+	
 	// Draw team name
 	awayTeamTextBound, _ := fontDrawer.BoundString(message.AwayTeam.Name)
 	awayTeamXPosition := fixed.I(90)
@@ -76,7 +92,10 @@ func drawAwayTeam(background *image.RGBA, logo *image.RGBA, message *GameInfo, f
 	fontDrawer.DrawString(strconv.Itoa(message.AwayTeam.Score))
 }
 
-func drawHomeTeam(background *image.RGBA, logo *image.RGBA, message *GameInfo, fontDrawer *font.Drawer) {
+func drawHomeTeam(background *image.RGBA, logo image.Image, message *GameInfo, fontDrawer *font.Drawer) {
+	// Draw team logo
+	draw.Draw(background, logo.Bounds().Add(image.Point{X: 20, Y: 55}), logo, image.Point{}, draw.Over)
+
 	// Draw team name
 	homeTeamTextBound, _ := fontDrawer.BoundString(message.HomeTeam.Name)
 	homeTeamXPosition := fixed.I(90)
