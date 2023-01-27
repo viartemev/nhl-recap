@@ -2,11 +2,11 @@ package nhl
 
 import (
 	"bytes"
-	log "github.com/sirupsen/logrus"
 	"image"
 	"image/color"
 	"image/png"
-	"os"
+	"nhl-recap/nhl/domain"
+	"nhl-recap/nhl/logos"
 	"strconv"
 
 	"github.com/golang/freetype"
@@ -17,23 +17,26 @@ import (
 	"golang.org/x/image/math/fixed"
 )
 
-func GenerateScoreCard(message *GameInfo) []byte {
+type ScoreCardGenerator struct {
+	logos logos.Logos
+}
+
+func NewScoreCardGenerator(l logos.Logos) ScoreCardGenerator {
+	return ScoreCardGenerator{logos: l}
+}
+
+func (g *ScoreCardGenerator) GenerateScoreCard(game domain.ScheduleGame) []byte {
 	var width = 300
 	var height = 100
-	img, _ := createCard(width, height, color.White, message)
+	background := image.NewRGBA(image.Rect(0, 0, width, height))
+	draw.Draw(background, background.Bounds(), &image.Uniform{C: color.White}, image.Point{}, draw.Src)
+	_ = drawText(background, game, &g.logos)
 	buf := new(bytes.Buffer)
-	_ = png.Encode(buf, img)
+	_ = png.Encode(buf, background)
 	return buf.Bytes()
 }
 
-func createCard(width int, height int, color color.Color, message *GameInfo) (*image.RGBA, error) {
-	background := image.NewRGBA(image.Rect(0, 0, width, height))
-	draw.Draw(background, background.Bounds(), &image.Uniform{C: color}, image.Point{}, draw.Src)
-	_ = drawText(background, message)
-	return background, nil
-}
-
-func drawText(canvas *image.RGBA, message *GameInfo) error {
+func drawText(canvas *image.RGBA, game domain.ScheduleGame, l *logos.Logos) error {
 	var (
 		fgColor  image.Image
 		fontFace *truetype.Font
@@ -51,29 +54,20 @@ func drawText(canvas *image.RGBA, message *GameInfo) error {
 		}),
 	}
 
-	img, err := os.Open("logo.png")
-	if err != nil {
-		log.Fatalf("failed to open: %s", err)
-	}
-
-	logo, err := png.Decode(img)
-	if err != nil {
-		log.Fatalf("failed to decode: %s", err)
-	}
-	defer img.Close()
-
-	drawHomeTeam(canvas, logo, message, fontDrawer)
-	drawAwayTeam(canvas, logo, message, fontDrawer)
+	homeLogo := l.GetLogoByTeam(game.Teams.Home.Team.Name)
+	drawAwayTeam(canvas, homeLogo, game, fontDrawer)
+	awayLogo := l.GetLogoByTeam(game.Teams.Away.Team.Name)
+	drawHomeTeam(canvas, awayLogo, game, fontDrawer)
 
 	return err
 }
 
-func drawAwayTeam(background *image.RGBA, logo image.Image, message *GameInfo, fontDrawer *font.Drawer) {
+func drawHomeTeam(background *image.RGBA, logo image.Image, game domain.ScheduleGame, fontDrawer *font.Drawer) {
 	// Draw team logo
 	draw.Draw(background, logo.Bounds().Add(image.Point{X: 20, Y: 15}), logo, image.Point{}, draw.Over)
-	
+
 	// Draw team name
-	awayTeamTextBound, _ := fontDrawer.BoundString(message.AwayTeam.Name)
+	awayTeamTextBound, _ := fontDrawer.BoundString(game.Teams.Home.Team.Name)
 	awayTeamXPosition := fixed.I(90)
 	awayTeamTextHeight := awayTeamTextBound.Max.Y - awayTeamTextBound.Min.Y
 	awayTeamYPosition := fixed.I(background.Rect.Max.Y) - fixed.I(awayTeamTextHeight.Ceil())
@@ -81,7 +75,7 @@ func drawAwayTeam(background *image.RGBA, logo image.Image, message *GameInfo, f
 		X: awayTeamXPosition,
 		Y: awayTeamYPosition,
 	}
-	fontDrawer.DrawString(message.AwayTeam.Name)
+	fontDrawer.DrawString(game.Teams.Home.Team.Name)
 
 	// Draw team score
 	awayTeamXPosition = fixed.I(background.Rect.Max.X - 50)
@@ -89,15 +83,15 @@ func drawAwayTeam(background *image.RGBA, logo image.Image, message *GameInfo, f
 		X: awayTeamXPosition,
 		Y: awayTeamYPosition,
 	}
-	fontDrawer.DrawString(strconv.Itoa(message.AwayTeam.Score))
+	fontDrawer.DrawString(strconv.Itoa(game.Teams.Home.Score))
 }
 
-func drawHomeTeam(background *image.RGBA, logo image.Image, message *GameInfo, fontDrawer *font.Drawer) {
+func drawAwayTeam(background *image.RGBA, logo image.Image, message domain.ScheduleGame, fontDrawer *font.Drawer) {
 	// Draw team logo
 	draw.Draw(background, logo.Bounds().Add(image.Point{X: 20, Y: 55}), logo, image.Point{}, draw.Over)
 
 	// Draw team name
-	homeTeamTextBound, _ := fontDrawer.BoundString(message.HomeTeam.Name)
+	homeTeamTextBound, _ := fontDrawer.BoundString(message.Teams.Away.Team.Name)
 	homeTeamXPosition := fixed.I(90)
 	homeTeamTextHeight := homeTeamTextBound.Max.Y - homeTeamTextBound.Min.Y
 	homeTeamYPosition := fixed.I((background.Rect.Max.Y)-homeTeamTextHeight.Ceil())/4 + fixed.I(homeTeamTextHeight.Ceil())
@@ -105,7 +99,7 @@ func drawHomeTeam(background *image.RGBA, logo image.Image, message *GameInfo, f
 		X: homeTeamXPosition,
 		Y: homeTeamYPosition,
 	}
-	fontDrawer.DrawString(message.HomeTeam.Name)
+	fontDrawer.DrawString(message.Teams.Away.Team.Name)
 
 	// Draw team score
 	homeTeamXPosition = fixed.I(background.Rect.Max.X - 50)
@@ -113,5 +107,5 @@ func drawHomeTeam(background *image.RGBA, logo image.Image, message *GameInfo, f
 		X: homeTeamXPosition,
 		Y: homeTeamYPosition,
 	}
-	fontDrawer.DrawString(strconv.Itoa(message.HomeTeam.Score))
+	fontDrawer.DrawString(strconv.Itoa(message.Teams.Away.Score))
 }

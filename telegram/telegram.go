@@ -2,7 +2,6 @@ package telegram
 
 import (
 	"bytes"
-	"fmt"
 	log "github.com/sirupsen/logrus"
 	flag "github.com/spf13/pflag"
 	tele "gopkg.in/telebot.v3"
@@ -44,20 +43,19 @@ func InitializeBot() *NHLRecapBot {
 func (bot *NHLRecapBot) SendSubscriptions(subscription util.Subscription[*nhl.GameInfo]) {
 	go func() {
 		for message := range subscription.Updates() {
-			scoreCard := tele.FromReader(bytes.NewReader(nhl.GenerateScoreCard(message)))
-			bot.Users.Range(sendScoreCard(scoreCard, message, bot))
+			bot.Users.Range(sendScoreCard(message, bot))
 		}
 	}()
 }
 
-func sendScoreCard(scoreCard tele.File, message *nhl.GameInfo, bot *NHLRecapBot) func(user int64) {
+func sendScoreCard(message *nhl.GameInfo, bot *NHLRecapBot) func(user int64) {
 	return func(user int64) {
-		photo := &tele.Photo{File: scoreCard}
+		photo := &tele.Photo{File: tele.FromReader(bytes.NewReader(message.ScoreCard))}
 		senderOptions := &tele.SendOptions{ReplyMarkup: &tele.ReplyMarkup{InlineKeyboard: [][]tele.InlineButton{
 			{
 				tele.InlineButton{
 					Unique: strconv.Itoa(message.GamePk),
-					Text:   fmt.Sprintf("%s v.s. %s", message.HomeTeam.Name, message.AwayTeam.Name),
+					Text:   "Watch",
 					URL:    message.Video,
 				},
 			},
@@ -86,22 +84,5 @@ func (bot *NHLRecapBot) HandleUnsubscription() {
 		bot.Users.Delete(recipient)
 		log.WithFields(log.Fields{"user": recipient}).Info("User unsubscribed")
 		return c.Send("Successfully unsubscribed")
-	})
-}
-
-func (bot *NHLRecapBot) ShowImage() {
-	bot.Handle("/show", func(context tele.Context) error {
-		photo := &tele.Photo{
-			File: tele.FromReader(bytes.NewReader(nhl.GenerateScoreCard(nil))),
-		}
-		return context.Send(photo, &tele.SendOptions{ReplyMarkup: &tele.ReplyMarkup{InlineKeyboard: [][]tele.InlineButton{
-			{
-				tele.InlineButton{
-					Unique: "foo_btn",
-					Text:   "Watch",
-					URL:    "https://wsczoominwestus.prod-cdn.clipro.tv/publish/7884995/12395948/58e70ac9-77f9-4111-9c90-53216088cce0.mp4",
-				},
-			},
-		}}})
 	})
 }

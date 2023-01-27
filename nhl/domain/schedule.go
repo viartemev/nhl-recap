@@ -4,7 +4,7 @@ type Schedule struct {
 	Dates []DateGames
 }
 
-func (s *Schedule) ExtractFinishedGames() (finishedGames []Games) {
+func (s *Schedule) ExtractFinishedGames() (finishedGames []ScheduleGame) {
 	for _, date := range s.Dates {
 		for _, game := range date.Games {
 			if game.Status.AbstractGameState == "Final" {
@@ -17,10 +17,10 @@ func (s *Schedule) ExtractFinishedGames() (finishedGames []Games) {
 
 type DateGames struct {
 	Date  string `json:"date"`
-	Games []Games
+	Games []ScheduleGame
 }
 
-type Games struct {
+type ScheduleGame struct {
 	GamePk int `json:"gamePk"`
 	Teams  Teams
 	Status struct {
