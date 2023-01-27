@@ -5,19 +5,15 @@ import (
 	log "github.com/sirupsen/logrus"
 	flag "github.com/spf13/pflag"
 	tele "gopkg.in/telebot.v3"
-	"nhl-recap/nhl"
+	d "nhl-recap/domain"
 	"nhl-recap/util"
 	"strconv"
 	"time"
 )
 
-type TelegramUsers struct {
-	Users *util.Set[int64]
-}
-
 type NHLRecapBot struct {
 	*tele.Bot
-	*TelegramUsers
+	Users *util.Set[int64]
 }
 
 func InitializeBot() *NHLRecapBot {
@@ -36,11 +32,10 @@ func InitializeBot() *NHLRecapBot {
 		log.WithError(err).Error("Can't start bot")
 		return nil
 	}
-	users := &TelegramUsers{util.NewSet[int64]()}
-	return &NHLRecapBot{bot, users}
+	return &NHLRecapBot{bot, util.NewSet[int64]()}
 }
 
-func (bot *NHLRecapBot) SendSubscriptions(subscription util.Subscription[*nhl.GameInfo]) {
+func (bot *NHLRecapBot) SendSubscriptions(subscription util.Subscription[*d.GameInfo]) {
 	go func() {
 		for message := range subscription.Updates() {
 			bot.Users.Range(sendScoreCard(message, bot))
@@ -48,17 +43,11 @@ func (bot *NHLRecapBot) SendSubscriptions(subscription util.Subscription[*nhl.Ga
 	}()
 }
 
-func sendScoreCard(message *nhl.GameInfo, bot *NHLRecapBot) func(user int64) {
+func sendScoreCard(message *d.GameInfo, bot *NHLRecapBot) func(user int64) {
 	return func(user int64) {
 		photo := &tele.Photo{File: tele.FromReader(bytes.NewReader(message.ScoreCard))}
 		senderOptions := &tele.SendOptions{ReplyMarkup: &tele.ReplyMarkup{InlineKeyboard: [][]tele.InlineButton{
-			{
-				tele.InlineButton{
-					Unique: strconv.Itoa(message.GamePk),
-					Text:   "Watch",
-					URL:    message.Video,
-				},
-			},
+			{tele.InlineButton{Unique: strconv.Itoa(message.GamePk), Text: "Watch", URL: message.Video}},
 		}}}
 		_, err := bot.Send(&tele.User{ID: user}, photo, senderOptions)
 		if err != nil {
