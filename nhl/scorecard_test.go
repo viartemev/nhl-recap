@@ -3,6 +3,7 @@ package nhl
 import (
 	"bytes"
 	"image"
+	"image/color"
 	"image/png"
 	"nhl-recap/nhl/domain"
 	"nhl-recap/nhl/logos"
@@ -22,12 +23,17 @@ func TestGamesUnmarshalling(t *testing.T) {
 		}{Away: domain.TeamScore(struct {
 			Team  domain.Team
 			Score int
-		}{Team: domain.Team{Name: "PIT"}, Score: 7}), Home: domain.TeamScore(struct {
+		}{Team: domain.Team{Name: "ANA"}, Score: 2}), Home: domain.TeamScore(struct {
 			Team  domain.Team
 			Score int
-		}{Team: domain.Team{Name: "ANA"}, Score: 2})}),
+		}{Team: domain.Team{Name: "PIT"}, Score: 7})}),
 	}
-	scoreCard := NewScoreCardGenerator(logos.LoadLogos())
+	settings := GeneratorSettings{
+		Width:      300,
+		Height:     100,
+		Background: color.White,
+	}
+	scoreCard := NewScoreCardGenerator(logos.LoadLogos(), settings)
 	save(scoreCard.GenerateScoreCard(game))
 }
 

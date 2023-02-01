@@ -17,9 +17,9 @@ func (l *Logos) GetLogoByTeam(team string) image.Image {
 	return l.m[team]
 }
 
-func LoadLogos() Logos {
-	logos := Logos{m: map[string]image.Image{}}
-	baseDir := "./logos"
+func LoadLogos() *Logos {
+	logos := &Logos{m: map[string]image.Image{}}
+	baseDir := "nhl/logos"
 	files, err := filepath.Glob(filepath.Join(baseDir, "*.png"))
 	if err != nil {
 		fmt.Println(err)

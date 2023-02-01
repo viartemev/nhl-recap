@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	log "github.com/sirupsen/logrus"
+	"image/color"
 	d "nhl-recap/domain"
 	"nhl-recap/nhl/domain"
 	"nhl-recap/nhl/logos"
@@ -17,7 +18,16 @@ type NHL struct {
 }
 
 func NewNHL() *NHL {
-	return &NHL{Fetcher: &NHLFetcher{client: NewNHLClient(), uniqueGames: util.NewSet[int](), scoreCardGenerator: NewScoreCardGenerator(logos.LoadLogos())}}
+	settings := GeneratorSettings{
+		Width:      300,
+		Height:     100,
+		Background: color.White,
+	}
+	return &NHL{Fetcher: &NHLFetcher{
+		client:             NewNHLClient(),
+		uniqueGames:        util.NewSet[int](),
+		scoreCardGenerator: NewScoreCardGenerator(logos.LoadLogos(), settings)},
+	}
 }
 
 type NHLFetcher struct {
