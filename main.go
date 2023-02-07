@@ -25,7 +25,6 @@ func main() {
 	nhlRecapBot.HandleSubscription()
 	nhlRecapBot.HandleUnsubscription()
 	nhlRecapBot.SendSubscriptions(subscription)
-	nhlRecapBot.ShowImage()
 
 	log.Info("NHL Recap telegram nhlRecapBot is starting...")
 	nhlRecapBot.Start()

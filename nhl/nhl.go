@@ -4,38 +4,39 @@ import (
 	"context"
 	"errors"
 	log "github.com/sirupsen/logrus"
+	"image/color"
+	d "nhl-recap/domain"
 	"nhl-recap/nhl/domain"
+	"nhl-recap/nhl/logos"
 	"nhl-recap/util"
 )
 
 var scheduleError = errors.New("can't get schedule")
 
-type GameInfo struct {
-	GamePk   int
-	Video    string
-	HomeTeam *TeamInfo
-	AwayTeam *TeamInfo
-}
-
-type TeamInfo struct {
-	Name  string
-	Score int
-}
-
 type NHL struct {
-	Fetcher util.Fetcher[*GameInfo]
+	Fetcher util.Fetcher[*d.GameInfo]
 }
 
 func NewNHL() *NHL {
-	return &NHL{Fetcher: &NHLFetcher{client: NewNHLClient(), uniqueGames: util.NewSet[int]()}}
+	settings := GeneratorSettings{
+		Width:      300,
+		Height:     100,
+		Background: color.White,
+	}
+	return &NHL{Fetcher: &NHLFetcher{
+		client:             NewNHLClient(),
+		uniqueGames:        util.NewSet[int](),
+		scoreCardGenerator: NewScoreCardGenerator(logos.LoadLogos(), settings)},
+	}
 }
 
 type NHLFetcher struct {
-	client      NHLClient
-	uniqueGames *util.Set[int]
+	client             NHLClient
+	uniqueGames        *util.Set[int]
+	scoreCardGenerator ScoreCardGenerator
 }
 
-func (f *NHLFetcher) Fetch(ctx context.Context) (chan *GameInfo, error) {
+func (f *NHLFetcher) Fetch(ctx context.Context) (chan *d.GameInfo, error) {
 	log.Info("Requesting nhl info")
 	schedule, err := f.client.FetchSchedule()
 	if err != nil {
@@ -44,14 +45,14 @@ func (f *NHLFetcher) Fetch(ctx context.Context) (chan *GameInfo, error) {
 	finishedGames := schedule.ExtractFinishedGames()
 	log.Infof("Got %d finished games", len(finishedGames))
 	//TODO fix errors in channel
-	fetchGame := func(games domain.Games) *GameInfo { return f.fetchGameInfo(games) }
+	fetchGame := func(games domain.ScheduleGame) *d.GameInfo { return f.fetchGameInfo(games) }
 	games := util.FanIn(ctx, finishedGames, fetchGame)
-	uniqueGame := func(info *GameInfo) bool { return f.uniqueGames.Add(info.GamePk) }
-	notNil := func(info *GameInfo) bool { return info != nil }
+	uniqueGame := func(info *d.GameInfo) bool { return f.uniqueGames.Add(info.GamePk) }
+	notNil := func(info *d.GameInfo) bool { return info != nil }
 	return util.Filter(ctx, games, util.And(notNil, uniqueGame)), nil
 }
 
-func (f *NHLFetcher) fetchGameInfo(game domain.Games) *GameInfo {
+func (f *NHLFetcher) fetchGameInfo(game domain.ScheduleGame) *d.GameInfo {
 	fetchedGame, err := f.client.FetchGame(game.GamePk)
 	if err != nil {
 		log.WithError(err).Error("Can't get game info")
@@ -61,10 +62,5 @@ func (f *NHLFetcher) fetchGameInfo(game domain.Games) *GameInfo {
 	if len(video) == 0 {
 		return nil
 	}
-	return &GameInfo{
-		game.GamePk,
-		video,
-		&TeamInfo{game.Teams.Home.Team.Name, game.Teams.Home.Score},
-		&TeamInfo{game.Teams.Away.Team.Name, game.Teams.Away.Score},
-	}
+	return &d.GameInfo{GamePk: game.GamePk, Video: video, ScoreCard: f.scoreCardGenerator.GenerateScoreCard(game)}
 }

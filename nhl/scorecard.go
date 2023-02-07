@@ -5,6 +5,8 @@ import (
 	"image"
 	"image/color"
 	"image/png"
+	"nhl-recap/nhl/domain"
+	"nhl-recap/nhl/logos"
 	"strconv"
 
 	"github.com/golang/freetype"
@@ -15,23 +17,67 @@ import (
 	"golang.org/x/image/math/fixed"
 )
 
-func GenerateScoreCard(message *GameInfo) []byte {
-	var width = 300
-	var height = 100
-	img, _ := createCard(width, height, color.White, message)
+type ScoreCardGenerator struct {
+	logos         *logos.Logos
+	abbreviations map[string]string
+	settings      GeneratorSettings
+}
+
+type GeneratorSettings struct {
+	Width      int
+	Height     int
+	Background color.Color
+	TextColor  color.Color
+	FontSize   float64
+}
+
+func NewScoreCardGenerator(l *logos.Logos, settings GeneratorSettings) ScoreCardGenerator {
+	return ScoreCardGenerator{logos: l, settings: settings, abbreviations: map[string]string{
+		"New Jersey Devils":     "NJD",
+		"New York Islanders":    "NYI",
+		"New York Rangers":      "NYR",
+		"Los Angeles Kings":     "LAK",
+		"San Jose Sharks":       "SJS",
+		"St. Louis Blues":       "STL",
+		"Tampa Bay Lightning":   "TBL",
+		"Washington Capitals":   "WSH",
+		"Carolina Hurricanes":   "CAR",
+		"Florida Panthers":      "FLA",
+		"Chicago Blackhawks":    "CHI",
+		"Colorado Avalanche":    "COL",
+		"Minnesota Wild":        "MIN",
+		"Nashville Predators":   "NSH",
+		"Winnipeg Jets":         "WPG",
+		"Anaheim Ducks":         "ANA",
+		"Columbus Blue Jackets": "CBJ",
+		"Dallas Starts":         "DAL",
+		"Edmonton Oilers":       "EDM",
+		"Vancouver Canucks":     "VAN",
+		"Arizona Coyotes":       "ARI",
+		"Calgary Flames":        "CGY",
+		"Montréal Canadiens":    "MTL",
+		"Ottawa Senators":       "OTT",
+		"Philadelphia Flyers":   "PHI",
+		"Pittsburgh Pittsburgh": "PIT",
+		"Toronto Maple Leafs":   "TOR",
+		"Boston Bruins":         "BOS",
+		"Buffalo Sabres":        "BUF",
+		"Detroit Red Wings":     "DET",
+		"Seattle Kraken":        "SEA",
+		"Golden Knights":        "VGK",
+	}}
+}
+
+func (g *ScoreCardGenerator) GenerateScoreCard(game domain.ScheduleGame) []byte {
+	background := image.NewRGBA(image.Rect(0, 0, g.settings.Width, g.settings.Height))
+	draw.Draw(background, background.Bounds(), &image.Uniform{C: g.settings.Background}, image.Point{}, draw.Src)
+	_ = drawText(background, game, g.logos, g.abbreviations)
 	buf := new(bytes.Buffer)
-	_ = png.Encode(buf, img)
+	_ = png.Encode(buf, background)
 	return buf.Bytes()
 }
 
-func createCard(width int, height int, color color.Color, message *GameInfo) (*image.RGBA, error) {
-	background := image.NewRGBA(image.Rect(0, 0, width, height))
-	draw.Draw(background, background.Bounds(), &image.Uniform{C: color}, image.Point{}, draw.Src)
-	_ = drawText(background, message)
-	return background, nil
-}
-
-func drawText(canvas *image.RGBA, message *GameInfo) error {
+func drawText(canvas *image.RGBA, game domain.ScheduleGame, l *logos.Logos, abbreviations map[string]string) error {
 	var (
 		fgColor  image.Image
 		fontFace *truetype.Font
@@ -48,16 +94,23 @@ func drawText(canvas *image.RGBA, message *GameInfo) error {
 			Hinting: font.HintingFull,
 		}),
 	}
+	awayAbbreviation := abbreviations[game.Teams.Away.Team.Name]
+	awayLogo := l.GetLogoByTeam(awayAbbreviation)
+	homeAbbreviation := abbreviations[game.Teams.Home.Team.Name]
+	homeLogo := l.GetLogoByTeam(homeAbbreviation)
 
-	drawHomeTeam(canvas, nil, message, fontDrawer)
-	drawAwayTeam(canvas, nil, message, fontDrawer)
+	drawHomeTeam(canvas, homeLogo, homeAbbreviation, game.Teams.Home.Score, fontDrawer)
+	drawAwayTeam(canvas, awayLogo, awayAbbreviation, game.Teams.Away.Score, fontDrawer)
 
 	return err
 }
 
-func drawAwayTeam(background *image.RGBA, logo *image.RGBA, message *GameInfo, fontDrawer *font.Drawer) {
+func drawHomeTeam(background *image.RGBA, logo image.Image, abbreviation string, score int, fontDrawer *font.Drawer) {
+	// Draw team logo
+	draw.Draw(background, logo.Bounds().Add(image.Point{X: 20, Y: 55}), logo, image.Point{}, draw.Over)
+
 	// Draw team name
-	awayTeamTextBound, _ := fontDrawer.BoundString(message.AwayTeam.Name)
+	awayTeamTextBound, _ := fontDrawer.BoundString(abbreviation)
 	awayTeamXPosition := fixed.I(90)
 	awayTeamTextHeight := awayTeamTextBound.Max.Y - awayTeamTextBound.Min.Y
 	awayTeamYPosition := fixed.I(background.Rect.Max.Y) - fixed.I(awayTeamTextHeight.Ceil())
@@ -65,7 +118,7 @@ func drawAwayTeam(background *image.RGBA, logo *image.RGBA, message *GameInfo, f
 		X: awayTeamXPosition,
 		Y: awayTeamYPosition,
 	}
-	fontDrawer.DrawString(message.AwayTeam.Name)
+	fontDrawer.DrawString(abbreviation)
 
 	// Draw team score
 	awayTeamXPosition = fixed.I(background.Rect.Max.X - 50)
@@ -73,12 +126,15 @@ func drawAwayTeam(background *image.RGBA, logo *image.RGBA, message *GameInfo, f
 		X: awayTeamXPosition,
 		Y: awayTeamYPosition,
 	}
-	fontDrawer.DrawString(strconv.Itoa(message.AwayTeam.Score))
+	fontDrawer.DrawString(strconv.Itoa(score))
 }
 
-func drawHomeTeam(background *image.RGBA, logo *image.RGBA, message *GameInfo, fontDrawer *font.Drawer) {
+func drawAwayTeam(background *image.RGBA, logo image.Image, abbreviation string, score int, fontDrawer *font.Drawer) {
+	// Draw team logo
+	draw.Draw(background, logo.Bounds().Add(image.Point{X: 20, Y: 15}), logo, image.Point{}, draw.Over)
+
 	// Draw team name
-	homeTeamTextBound, _ := fontDrawer.BoundString(message.HomeTeam.Name)
+	homeTeamTextBound, _ := fontDrawer.BoundString(abbreviation)
 	homeTeamXPosition := fixed.I(90)
 	homeTeamTextHeight := homeTeamTextBound.Max.Y - homeTeamTextBound.Min.Y
 	homeTeamYPosition := fixed.I((background.Rect.Max.Y)-homeTeamTextHeight.Ceil())/4 + fixed.I(homeTeamTextHeight.Ceil())
@@ -86,7 +142,7 @@ func drawHomeTeam(background *image.RGBA, logo *image.RGBA, message *GameInfo, f
 		X: homeTeamXPosition,
 		Y: homeTeamYPosition,
 	}
-	fontDrawer.DrawString(message.HomeTeam.Name)
+	fontDrawer.DrawString(abbreviation)
 
 	// Draw team score
 	homeTeamXPosition = fixed.I(background.Rect.Max.X - 50)
@@ -94,5 +150,5 @@ func drawHomeTeam(background *image.RGBA, logo *image.RGBA, message *GameInfo, f
 		X: homeTeamXPosition,
 		Y: homeTeamYPosition,
 	}
-	fontDrawer.DrawString(strconv.Itoa(message.HomeTeam.Score))
+	fontDrawer.DrawString(strconv.Itoa(score))
 }
