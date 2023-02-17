@@ -64,7 +64,7 @@ func NewScoreCardGenerator(l *logos.Logos, settings GeneratorSettings) ScoreCard
 		"Buffalo Sabres":        "BUF",
 		"Detroit Red Wings":     "DET",
 		"Seattle Kraken":        "SEA",
-		"Golden Knights":        "VGK",
+		"Vegas Golden Knights":  "VGK",
 	}}
 }
 
