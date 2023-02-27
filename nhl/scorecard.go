@@ -58,7 +58,7 @@ func NewScoreCardGenerator(l *logos.Logos, settings GeneratorSettings) ScoreCard
 		"Montréal Canadiens":    "MTL",
 		"Ottawa Senators":       "OTT",
 		"Philadelphia Flyers":   "PHI",
-		"Pittsburgh Pittsburgh": "PIT",
+		"Pittsburgh Penguins":   "PIT",
 		"Toronto Maple Leafs":   "TOR",
 		"Boston Bruins":         "BOS",
 		"Buffalo Sabres":        "BUF",

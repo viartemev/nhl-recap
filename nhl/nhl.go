@@ -44,23 +44,31 @@ func (f *NHLFetcher) Fetch(ctx context.Context) (chan *d.GameInfo, error) {
 	}
 	finishedGames := schedule.ExtractFinishedGames()
 	log.Infof("Got %d finished games", len(finishedGames))
-	//TODO fix errors in channel
-	fetchGame := func(games domain.ScheduleGame) *d.GameInfo { return f.fetchGameInfo(games) }
-	games := util.FanIn(ctx, finishedGames, fetchGame)
+	gamesChannel := make([]<-chan *d.GameInfo, 0)
+	for _, game := range finishedGames {
+		gamesChannel = append(gamesChannel, f.fetchGameInfo(game))
+	}
+	games := util.FanIn[*d.GameInfo](ctx, gamesChannel...)
 	uniqueGame := func(info *d.GameInfo) bool { return f.uniqueGames.Add(info.GamePk) }
 	notNil := func(info *d.GameInfo) bool { return info != nil }
 	return util.Filter(ctx, games, util.And(notNil, uniqueGame)), nil
 }
 
-func (f *NHLFetcher) fetchGameInfo(game domain.ScheduleGame) *d.GameInfo {
-	fetchedGame, err := f.client.FetchGame(game.GamePk)
-	if err != nil {
-		log.WithError(err).Error("Can't get game info")
-		return nil
-	}
-	video := fetchedGame.ExtractGameVideo()
-	if len(video) == 0 {
-		return nil
-	}
-	return &d.GameInfo{GamePk: game.GamePk, Video: video, ScoreCard: f.scoreCardGenerator.GenerateScoreCard(game)}
+func (f *NHLFetcher) fetchGameInfo(game domain.ScheduleGame) <-chan *d.GameInfo {
+	out := make(chan *d.GameInfo)
+	go func() {
+		fetchedGame, err := f.client.FetchGame(game.GamePk)
+		if err != nil {
+			log.WithError(err).Error("Can't get game info")
+			//TODO what should I do with channel?
+			return
+		}
+		video := fetchedGame.ExtractGameVideo()
+		if len(video) == 0 {
+			//TODO what should I do with channel?
+			return
+		}
+		out <- &d.GameInfo{GamePk: game.GamePk, Video: video, ScoreCard: f.scoreCardGenerator.GenerateScoreCard(game)}
+	}()
+	return out
 }

@@ -5,26 +5,28 @@ import (
 	"sync"
 )
 
-func FanIn[K any, V any](ctx context.Context, arr []K, fn func(element K) V) chan V {
-	out := make(chan V)
+func FanIn[K any](ctx context.Context, fetchers ...<-chan K) chan K {
+	out := make(chan K)
 	var wg sync.WaitGroup
 
-	for _, el := range arr {
+	for _, f := range fetchers {
 		wg.Add(1)
-		go func(element K) {
+		go func(fetcher <-chan K) {
 			defer wg.Done()
-			//TODO rewrite to channels or it's too much?
-			select {
-			case out <- fn(element):
-			case <-ctx.Done():
-				return
+			for {
+				select {
+				case out <- <-fetcher:
+				case <-ctx.Done():
+					return
+				}
 			}
-		}(el)
+		}(f)
 	}
 
 	go func() {
 		wg.Wait()
 		close(out)
 	}()
+
 	return out
 }

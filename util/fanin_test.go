@@ -7,8 +7,13 @@ import (
 
 func BenchmarkFanIn(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		FanIn[int, int](context.Background(), []int{1, 2, 3}, func(element int) int {
-			return element * 3
-		})
+		fetchers := func() <-chan int {
+			out := make(chan int)
+			go func() {
+				out <- 42
+			}()
+			return out
+		}
+		FanIn[int](context.Background(), fetchers())
 	}
 }
