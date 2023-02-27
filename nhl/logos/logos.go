@@ -17,6 +17,10 @@ func (l *Logos) GetLogoByTeam(team string) image.Image {
 	return l.m[team]
 }
 
+func (l *Logos) GetDefault() image.Image {
+	return image.NewRGBA(image.Rectangle{image.Point{X: 0, Y: 0}, image.Point{X: 30, Y: 30}})
+}
+
 func LoadLogos() *Logos {
 	logos := &Logos{m: map[string]image.Image{}}
 	baseDir := "nhl/logos"

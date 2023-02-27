@@ -2,6 +2,7 @@ package nhl
 
 import (
 	"bytes"
+	"fmt"
 	"image"
 	"image/color"
 	"image/png"
@@ -86,6 +87,9 @@ func drawText(canvas *image.RGBA, game domain.ScheduleGame, l *logos.Logos, abbr
 	)
 	fgColor = image.Black
 	fontFace, err = freetype.ParseFont(goregular.TTF)
+	if err != nil {
+		return err
+	}
 	fontDrawer := &font.Drawer{
 		Dst: canvas,
 		Src: fgColor,
@@ -96,13 +100,19 @@ func drawText(canvas *image.RGBA, game domain.ScheduleGame, l *logos.Logos, abbr
 	}
 	awayAbbreviation := abbreviations[game.Teams.Away.Team.Name]
 	awayLogo := l.GetLogoByTeam(awayAbbreviation)
+	if awayLogo == nil || awayAbbreviation == "" {
+		return fmt.Errorf("can't find away team: %v", game.Teams.Away.Team.Name)
+	}
 	homeAbbreviation := abbreviations[game.Teams.Home.Team.Name]
 	homeLogo := l.GetLogoByTeam(homeAbbreviation)
+	if homeLogo == nil || homeAbbreviation == "" {
+		return fmt.Errorf("can't find home team: %v", game.Teams.Home.Team.Name)
+	}
 
 	drawHomeTeam(canvas, homeLogo, homeAbbreviation, game.Teams.Home.Score, fontDrawer)
 	drawAwayTeam(canvas, awayLogo, awayAbbreviation, game.Teams.Away.Score, fontDrawer)
 
-	return err
+	return nil
 }
 
 func drawHomeTeam(background *image.RGBA, logo image.Image, abbreviation string, score int, fontDrawer *font.Drawer) {
