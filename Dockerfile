@@ -38,6 +38,7 @@ RUN apt update -y && \
 WORKDIR ${APP_BUILD_PATH}
 
 COPY --from=build --chmod=+x ${APP_BUILD_PATH}/${APP_BUILD_NAME} /usr/local/bin/
+COPY --from=build ${APP_BUILD_PATH}/nhl/logos/*.png /usr/local/bin/nhl/logos/
 
 ENTRYPOINT ["/usr/local/bin/nhl-recap"]
 
