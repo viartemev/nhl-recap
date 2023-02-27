@@ -3,6 +3,7 @@ package nhl
 import (
 	"bytes"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"image"
 	"image/color"
 	"image/png"
@@ -72,7 +73,8 @@ func NewScoreCardGenerator(l *logos.Logos, settings GeneratorSettings) ScoreCard
 func (g *ScoreCardGenerator) GenerateScoreCard(game domain.ScheduleGame) []byte {
 	background := image.NewRGBA(image.Rect(0, 0, g.settings.Width, g.settings.Height))
 	draw.Draw(background, background.Bounds(), &image.Uniform{C: g.settings.Background}, image.Point{}, draw.Src)
-	_ = drawText(background, game, g.logos, g.abbreviations)
+	err := drawText(background, game, g.logos, g.abbreviations)
+	log.WithError(err).Error("Can't draw text")
 	buf := new(bytes.Buffer)
 	_ = png.Encode(buf, background)
 	return buf.Bytes()
