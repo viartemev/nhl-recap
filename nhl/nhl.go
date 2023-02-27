@@ -57,6 +57,7 @@ func (f *NHLFetcher) Fetch(ctx context.Context) (chan *d.GameInfo, error) {
 func (f *NHLFetcher) fetchGameInfo(game domain.ScheduleGame) <-chan *d.GameInfo {
 	out := make(chan *d.GameInfo)
 	go func() {
+		defer close(out)
 		fetchedGame, err := f.client.FetchGame(game.GamePk)
 		if err != nil {
 			log.WithError(err).Error("Can't get game info")
