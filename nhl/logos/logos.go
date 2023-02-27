@@ -3,6 +3,7 @@ package logos
 import (
 	"bytes"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"image"
 	"os"
 	"path/filepath"
@@ -37,5 +38,6 @@ func LoadLogos() *Logos {
 		fileName := strings.TrimSuffix(filepath.Base(file), filepath.Ext(file))
 		logos.m[fileName] = img
 	}
+	log.Infof("Successfully loaded %v team logos", len(logos.m))
 	return logos
 }

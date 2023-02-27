@@ -74,7 +74,9 @@ func (g *ScoreCardGenerator) GenerateScoreCard(game domain.ScheduleGame) []byte 
 	background := image.NewRGBA(image.Rect(0, 0, g.settings.Width, g.settings.Height))
 	draw.Draw(background, background.Bounds(), &image.Uniform{C: g.settings.Background}, image.Point{}, draw.Src)
 	err := drawText(background, game, g.logos, g.abbreviations)
-	log.WithError(err).Error("Can't draw text")
+	if err != nil {
+		log.WithError(err).Error("Can't draw text")
+	}
 	buf := new(bytes.Buffer)
 	_ = png.Encode(buf, background)
 	return buf.Bytes()
