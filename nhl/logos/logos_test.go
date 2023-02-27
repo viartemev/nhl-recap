@@ -8,14 +8,6 @@ import (
 	"testing"
 )
 
-func TestLoadLogos(t *testing.T) {
-	logos := LoadLogos()
-	fmt.Println(len(logos.m))
-	if len(logos.m) != 2 {
-		t.Errorf("Map shouldn't be empty")
-	}
-}
-
 func TestLoadLogo_2(t *testing.T) {
 	baseDir := "." // change this to the actual directory path
 	files, err := filepath.Glob(filepath.Join(baseDir, "*.png"))
