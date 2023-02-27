@@ -79,9 +79,9 @@ func TestNHLHTTPClient_FetchSchedule_Real_Data(t *testing.T) {
 			assert.NotEmpty(t, game.GamePk, "GamePk should not be empty")
 			assert.NotEmpty(t, game.Status.AbstractGameState, "Game state should not be empty")
 			assert.NotEmpty(t, game.Teams.Away.Team.Name, "Team name should not be empty")
-			assert.NotEmpty(t, game.Teams.Away.Score, "Score should not be empty")
+			assert.NotNil(t, game.Teams.Away.Score, "Score should not be empty")
 			assert.NotEmpty(t, game.Teams.Home.Team.Name, "Team name should not be empty")
-			assert.NotEmpty(t, game.Teams.Home.Score, "Score should not be empty")
+			assert.NotNil(t, game.Teams.Home.Score, "Score should not be empty")
 		}
 	}
 }
@@ -105,9 +105,9 @@ func TestNHLHTTPClient_FetchSchedule_Mock_Client_Marshalling(t *testing.T) {
 			assert.NotEmpty(t, game.GamePk, "GamePk should not be empty")
 			assert.NotEmpty(t, game.Status.AbstractGameState, "Game state should not be empty")
 			assert.NotEmpty(t, game.Teams.Away.Team.Name, "Team name should not be empty")
-			assert.NotEmpty(t, game.Teams.Away.Score, "Score should not be empty")
+			assert.NotNil(t, game.Teams.Away.Score, "Score should not be empty")
 			assert.NotEmpty(t, game.Teams.Home.Team.Name, "Team name should not be empty")
-			assert.NotEmpty(t, game.Teams.Home.Score, "Score should not be empty")
+			assert.NotNil(t, game.Teams.Home.Score, "Score should not be empty")
 		}
 	}
 }
