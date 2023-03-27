@@ -3,7 +3,6 @@ package util
 import (
 	"context"
 	"errors"
-	"fmt"
 	"testing"
 	"time"
 )
@@ -75,7 +74,7 @@ func TestSubscription_UpdatesWithContextCancel(t *testing.T) {
 	fetcher := &mockFetcher[int]{
 		results: make(chan int),
 	}
-	ticker := time.NewTicker(time.Millisecond * 100)
+	ticker := time.NewTicker(time.Millisecond * 1000)
 	defer ticker.Stop()
 
 	s := NewSubscription[int](ctx, fetcher, ticker)
@@ -83,31 +82,12 @@ func TestSubscription_UpdatesWithContextCancel(t *testing.T) {
 	cancel()
 
 	select {
-	case u := <-s.Updates():
-		//FIXME
-		if u != 0 {
-			fmt.Println(u)
+	case _, ok := <-s.Updates():
+		if ok {
 			t.Errorf("received unexpected update")
 		}
-	case <-time.After(time.Second):
+	case <-time.After(time.Second * 3):
 	}
-}
-
-func TestName(t *testing.T) {
-	c := make(chan int)
-	fmt.Println(IsClosed(c)) // false
-	close(c)
-	fmt.Println(IsClosed(c)) // true
-}
-
-func IsClosed(ch <-chan int) bool {
-	select {
-	case v := <-ch:
-		fmt.Println(v)
-		return true
-	default:
-	}
-	return false
 }
 
 func TestSubscription_UpdatesWithFetcherError(t *testing.T) {
