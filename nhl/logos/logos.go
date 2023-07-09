@@ -24,7 +24,7 @@ func (l *Logos) GetDefault() image.Image {
 
 func LoadLogos() *Logos {
 	logos := &Logos{m: map[string]image.Image{}}
-	baseDir := "nhl/logos"
+	baseDir := "./nhl/logos"
 	files, err := filepath.Glob(filepath.Join(baseDir, "*.png"))
 	if err != nil {
 		fmt.Println(err)
