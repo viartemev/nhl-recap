@@ -5,6 +5,7 @@ import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"image"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -24,8 +25,7 @@ func (l *Logos) GetDefault() image.Image {
 
 func LoadLogos() *Logos {
 	logos := &Logos{m: map[string]image.Image{}}
-	baseDir := "nhl/logos"
-	files, err := filepath.Glob(filepath.Join(baseDir, "*.png"))
+	files, err := fs.Glob(os.DirFS("nhl/logos"), "*.png")
 	if err != nil {
 		fmt.Println(err)
 	}
