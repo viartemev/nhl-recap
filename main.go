@@ -19,7 +19,7 @@ func main() {
 	gracefulShutdown(cancel)
 
 	nhl := nhl.NewNHL()
-	subscription := util.NewSubscription(ctx, nhl.Fetcher, time.NewTicker(10*time.Second))
+	subscription := util.NewSubscription(ctx, nhl.Fetcher, time.NewTicker(10*time.Minute))
 
 	nhlRecapBot := telegram.InitializeBot()
 	nhlRecapBot.HandleSubscription()
