@@ -40,5 +40,5 @@ WORKDIR ${APP_BUILD_PATH}
 COPY --from=build --chmod=+x ${APP_BUILD_PATH}/${APP_BUILD_NAME} ${APP_BUILD_PATH}/${APP_BUILD_NAME}
 COPY --from=build ${APP_BUILD_PATH}/nhl/logos/*.png ${APP_BUILD_PATH}/nhl/logos/
 
-ENTRYPOINT ["${APP_BUILD_PATH}/${APP_BUILD_NAME}"]
+ENTRYPOINT ["/app/nhl-recap"]
 
