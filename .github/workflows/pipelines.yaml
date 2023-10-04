@@ -96,7 +96,7 @@ jobs:
   deploy:
     name: "Deploy Docker Image"
     needs:
-#      - docker-tag-gen
+      - docker-tag-gen
       - docker-build-push
     runs-on: ubuntu-latest
     steps:
