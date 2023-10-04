@@ -98,4 +98,4 @@ jobs:
     steps:
       - name: Remote Docker Login
         run: |
-          echo ${{ needs.docker-tag-gen.outputs.docker_tag }}
+          echo "${{ needs.docker-tag-gen.outputs.docker_tag }}"
