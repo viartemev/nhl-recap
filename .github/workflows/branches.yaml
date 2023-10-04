@@ -2,7 +2,8 @@ name: Pipeline Branches
 
 on:
   push:
-    branches: [ '!master' ]
+    branches-ignore:
+      - 'master'
 
 env:
   APP_NAME: "nhl-recap"
