@@ -66,9 +66,6 @@ jobs:
       contents: read
       packages: write
     steps:
-      - env:
-          TAG: ${{ needs.docker-tag-gen.outputs.docker_tag }}
-
       - name: Checkout code
         uses: actions/checkout@v2
 
@@ -87,20 +84,22 @@ jobs:
 
       - name: Build and push
         uses: docker/build-push-action@v2
+        env:
+          TAG: ${{ needs.docker-tag-gen.outputs.docker_tag }}
         with:
           context: .
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.docker-tag-gen.outputs.docker_tag }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
 
   deploy:
     name: "Deploy Docker Image"
-    needs:
-      - docker-tag-gen
-      - docker-build-push
+    needs: docker-build-push
     runs-on: ubuntu-latest
     steps:
       - name: Remote Docker Login
+        env:
+          TAG: ${{ needs.docker-tag-gen.outputs.docker_tag }}
         run: |
-          echo "${{ needs.docker-tag-gen.outputs.docker_tag }}"
+          echo "$DOCKER_TAG"
