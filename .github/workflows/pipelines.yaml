@@ -8,7 +8,7 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
   USERNAME: ${{ github.actor }}
-
+  WWW: ${{ needs.docker-build-push.outputs.docker_tag }}
 jobs:
   lint:
     name: "Source code Lint/Check"
