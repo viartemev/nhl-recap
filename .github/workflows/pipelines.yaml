@@ -96,7 +96,7 @@ jobs:
   deploy:
     name: "Deploy Docker Image"
     needs:
-      - docker-tag-gen
+#      - docker-tag-gen
       - docker-build-push
     runs-on: ubuntu-latest
     steps:
@@ -104,4 +104,4 @@ jobs:
         env:
           TAG: ${{ needs.docker-tag-gen.outputs.docker_tag }}
         run: |
-          echo "$DOCKER_TAG"
+          echo "${{ env.TAG }}"
