@@ -15,12 +15,10 @@ env:
   
 jobs:
   deploy:
-    name: deploy image
+    name: Deploy Docker Image
     runs-on: ubuntu-latest
     steps:
-      - name: install ssh keys
-        # check this thread to understand why its needed:
-        # <https://stackoverflow.com/a/70447517>
+      - name: Remote Docker Login
         run: |
           eval $(ssh-agent -s)
           ssh-add <(echo "$SSH_KEY")
@@ -28,3 +26,11 @@ jobs:
           chmod 700 ~/.ssh
           echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
           ssh -p$SSH_PORT $SSH_USER@$SSH_HOST 'sudo docker login '$REGISTRY' --username '$REGISTRY_USERNAME' --password '$REGISTRY_PASSWORD 
+      - name: Remote Docker PULL
+        run: |
+          eval $(ssh-agent -s)
+          ssh-add <(echo "$SSH_KEY")
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
+          ssh -p$SSH_PORT $SSH_USER@$SSH_HOST 'sudo docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest'
