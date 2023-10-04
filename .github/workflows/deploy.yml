@@ -11,9 +11,19 @@ jobs:
         # check this thread to understand why its needed:
         # <https://stackoverflow.com/a/70447517>
         run: |
-          install -m 600 -D /dev/null ~/.ssh/id_rsa
-          echo "${{ secrets.DEPLOY_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} > ~/.ssh/known_hosts
+          eval $(ssh-agent -s)
+          ssh-add <(echo "${{ secrets.DEPLOY_KEY }}")
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          '[[ -f /.dockerenv ]] && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'
           ssh ${{ secrets.DEPLOY_USERNAME }}@${{ secrets.DEPLOY_HOST }} "whoami"
-          rm -rf ~/.ssh
+
+        
+          #install -m 600 -D /dev/null ~/.ssh/id_rsa
+          #echo "${{ secrets.DEPLOY_KEY }}" > ~/.ssh/id_rsa
+          #chmod 600 ~/.ssh/id_rsa
+          #ls -la ~/.ssh/id_rsa
+          #cat 
+          #ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} > ~/.ssh/known_hosts
+          #ssh ${{ secrets.DEPLOY_USERNAME }}@${{ secrets.DEPLOY_HOST }} "whoami"
+          #rm -rf ~/.ssh
