@@ -48,9 +48,13 @@ jobs:
     outputs:
       docker_tag: ${{ steps.vars.outputs.docker_tag }}
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
       - name: Set Tag var
         id: vars
         run: echo "docker_tag=$(git rev-parse --abbrev-ref HEAD)-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
       - name: Preview Tag
         run: echo ${{ steps.vars.outputs.docker_tag }}
 
