@@ -5,6 +5,7 @@ on:
     branches: [ master ]
 
 env:
+  APP_NAME: "nhl-recap"
   REGISTRY: ghcr.io
   REGISTRY_USERNAME: ${{ github.actor }}
   REGISTRY_PASSWORD: ${{ secrets.GHCR_PAT }}
@@ -131,4 +132,4 @@ jobs:
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
           echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
-          ssh -p$SSH_PORT $SSH_USER@$SSH_HOST 'sudo docker run --name ${{ env.IMAGE_NAME }} --rm -d ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }} -t ${{ env.TELEGRAM_TOKEN }}'
+          ssh -p$SSH_PORT $SSH_USER@$SSH_HOST 'sudo docker run --name ${{ env.APP_NAME }} --rm -d ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }} -t ${{ env.TELEGRAM_TOKEN }}'
