@@ -91,4 +91,4 @@ jobs:
     steps:
       - name: Remote Docker Login
         run: |
-          recho ${{ steps.vars.outputs.QWERTY }}
+          echo ${{ steps.vars.outputs.QWERTY }}
