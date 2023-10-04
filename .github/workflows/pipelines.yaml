@@ -87,6 +87,8 @@ jobs:
 
       - name: Build and push
         uses: docker/build-push-action@v2
+        env:
+          TAG: ${{ needs.docker-tag-gen.outputs.docker_tag }}
         with:
           context: .
           push: true
@@ -99,8 +101,8 @@ jobs:
     needs: docker-build-push
     runs-on: ubuntu-latest
     steps:
-      - env:
-          TAG: ${{ needs.docker-tag-gen.outputs.docker_tag }}
       - name: Remote Docker Login
+        env:
+          TAG: ${{ needs.docker-tag-gen.outputs.docker_tag }}
         run: |
           echo "$DOCKER_TAG"
