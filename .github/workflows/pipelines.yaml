@@ -8,7 +8,6 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
   USERNAME: ${{ github.actor }}
-  QWERTY: ""
 
 jobs:
   lint:
@@ -71,9 +70,10 @@ jobs:
 #        id: tag
 #        run: echo "DOCKER_TAG=$(git rev-parse --abbrev-ref HEAD)-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
       - name: Set output
+        id: vars
         run: echo "QWERTY=FOO" >> $GITHUB_OUTPUT
       - name: Set output1
-        run: echo $QWERTY
+        run: echo ${{ steps.vars.outputs.QWERTY }}
 
 #      - name: Build and push
 #        uses: docker/build-push-action@v2
