@@ -48,7 +48,8 @@ jobs:
     permissions:
       contents: read
       packages: write
-
+    outputs:
+      docker_tag: ${{ steps.vars.outputs.QWERTY }}
     steps:
 #      - name: Checkout code
 #        uses: actions/checkout@v2
@@ -91,4 +92,4 @@ jobs:
     steps:
       - name: Remote Docker Login
         run: |
-          echo ${{ jobs.docker-build-push.steps.vars.outputs.QWERTY }}
+          echo ${{ needs.docker-build-push.outputs.docker_tag }}
