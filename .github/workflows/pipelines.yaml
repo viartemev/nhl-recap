@@ -87,13 +87,11 @@ jobs:
 
       - name: Build and push
         uses: docker/build-push-action@v2
-        env:
-          TAG: ${{ needs.docker-tag-gen.outputs.docker_tag }}
         with:
           context: .
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.docker-tag-gen.outputs.docker_tag }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
 
   deploy:
