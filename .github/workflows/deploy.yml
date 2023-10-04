@@ -2,6 +2,12 @@ name: Deploy docker image to server
 on:
   push:
     branches: [ master ]
+
+env:
+  SSH_KEY: "${{ secrets.DEPLOY_KEY }}"
+  SSH_USER: "${{ secrets.DEPLOY_USERNAME }}"
+  SSH_HOST: "${{ secrets.DEPLOY_HOST }}"
+  SSH_PORT: "22"
 jobs:
   deploy:
     name: deploy image
@@ -12,8 +18,8 @@ jobs:
         # <https://stackoverflow.com/a/70447517>
         run: |
           eval $(ssh-agent -s)
-          ssh-add <(echo "${{ secrets.DEPLOY_KEY }}")
+          ssh-add <(echo "$SSH_KEY")
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
           echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
-          ssh ${{ secrets.DEPLOY_USERNAME }}@${{ secrets.DEPLOY_HOST }} "whoami"
+          ssh -p$SSH_PORT $SSH_USER@$SSH_HOST 'whoami && sudo whoami'
