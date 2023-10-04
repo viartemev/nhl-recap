@@ -1,28 +1,87 @@
-name: Experiment
-on: [push]
+name: Pipeline
+
+on:
+  push:
+    branches: [ master ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  USERNAME: ${{ github.actor }}
+
 jobs:
-  job1:
-    name: Job 1
+  lint:
+    name: "Source code Lint/Check"
     runs-on: ubuntu-latest
     steps:
-      - name: Sleep and Run
-        run: |
-          echo "Sleeping for 10"
-          sleep 10
-  job2:
-    name: Job 2
-    needs: job1
+      - uses: actions/checkout@v2
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.18'
+          check-latest: true
+
+      - name: Verify dependencies
+        run: go mod verify
+
+      - name: Build
+        run: go build -v ./...
+
+      - name: Run go vet
+        run: go vet ./...
+
+      - name: Install golint
+        run: go install golang.org/x/lint/golint@latest
+
+      - name: Run golint
+        run: golint ./...
+
+      - name: Run tests
+        run: go test -race -vet=off ./...
+
+  docker-build-push:
+    name: "Docker Build/Push image"
+    needs: lint
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+        with:
+          install: true
+
+      - name: Login to Github Packages
+        uses: docker/login-action@v1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ env.USERNAME }}
+          password: ${{ secrets.GHCR_PAT }}
+
+      - name: Docker tag generate
+        id: tag
+        run: echo "DOCKER_TAG=$(git rev-parse --abbrev-ref HEAD)-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+
+  deploy:
+    name: "Deploy Docker Image"
+    needs: docker-build-push
     runs-on: ubuntu-latest
     steps:
-      - name: Dependant is Running
+      - name: Remote Docker Login
         run: |
-          echo "Completed job 2, but triggering failure"
-          exit 1
-  job3:
-    name: Job 3
-    needs: job2
-    runs-on: ubuntu-latest
-    steps:
-      - name: Will never run
-        run: |
-          echo "If you can read this, the experiment failed"
+          echo $DOCKER_TAG
