@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
 #      - name: Set up Go
 #        uses: actions/setup-go@v2
@@ -71,6 +71,8 @@ jobs:
 #        run: echo "DOCKER_TAG=$(git rev-parse --abbrev-ref HEAD)-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
       - name: Set output
         run: echo "QWERTY=FOO" >> $GITHUB_OUTPUT
+      - name: Set output1
+        run: echo $QWERTY
 
 #      - name: Build and push
 #        uses: docker/build-push-action@v2
