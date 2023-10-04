@@ -44,6 +44,7 @@ jobs:
   docker-tag-gen:
     name: "Generate Docker Tag"
     needs: lint
+    runs-on: ubuntu-latest
     outputs:
       docker_tag: ${{ steps.vars.outputs.docker_tag }}
     steps:
