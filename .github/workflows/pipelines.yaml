@@ -96,11 +96,11 @@ jobs:
 
   deploy:
     name: "Deploy Docker Image"
-    needs: docker-build-push
+    needs:
+      - docker-tag-gen
+      - docker-build-push
     runs-on: ubuntu-latest
     steps:
       - name: Remote Docker Login
-        env:
-          TAG: ${{ needs.docker-tag-gen.outputs.docker_tag }}
         run: |
-          echo "$DOCKER_TAG"
+          echo "${{ needs.docker-tag-gen.outputs.docker_tag }}"
