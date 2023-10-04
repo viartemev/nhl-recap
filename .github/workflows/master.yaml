@@ -1,0 +1,137 @@
+name: Pipeline Master
+
+on:
+  push:
+    branches: [ master ]
+
+env:
+  APP_NAME: "nhl-recap"
+  REGISTRY: ghcr.io
+  REGISTRY_USERNAME: ${{ github.actor }}
+  REGISTRY_PASSWORD: ${{ secrets.GHCR_PAT }}
+  IMAGE_NAME: ${{ github.repository }}
+  SSH_KEY: "${{ secrets.DEPLOY_KEY }}"
+  SSH_USER: "${{ secrets.DEPLOY_USERNAME }}"
+  SSH_HOST: "${{ secrets.DEPLOY_HOST }}"
+  SSH_PORT: "22"
+  TELEGRAM_TOKEN: "${{ secrets.TELEGRAM_TOKEN }}"
+
+jobs:
+  lint:
+    name: "Source code Lint/Check"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.18'
+          check-latest: true
+
+      - name: Verify dependencies
+        run: go mod verify
+
+      - name: Build
+        run: go build -v ./...
+
+      - name: Run go vet
+        run: go vet ./...
+
+      - name: Install golint
+        run: go install golang.org/x/lint/golint@latest
+
+      - name: Run golint
+        run: golint ./...
+
+      - name: Run tests
+        run: go test -race -vet=off ./...
+
+  docker-tag-gen:
+    name: "Generate Docker Tag"
+    needs: lint
+    runs-on: ubuntu-latest
+    outputs:
+      docker_tag: ${{ steps.vars.outputs.docker_tag }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set Tag var
+        id: vars
+        run: echo "docker_tag=$(git rev-parse --abbrev-ref HEAD)-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Preview Tag
+        run: echo ${{ steps.vars.outputs.docker_tag }}
+
+  docker-build-push:
+    name: "Docker Build/Push image"
+    needs: docker-tag-gen
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+        with:
+          install: true
+
+      - name: Login to Github Packages
+        uses: docker/login-action@v1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ env.REGISTRY_USERNAME }}
+          password: ${{ env.REGISTRY_PASSWORD }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v2
+        env:
+          TAG: ${{ needs.docker-tag-gen.outputs.docker_tag }}
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+
+  deploy:
+    name: "Deploy Docker Image"
+    needs:
+      - docker-tag-gen
+      - docker-build-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Remote Docker Login
+        run: |
+          eval $(ssh-agent -s)
+          ssh-add <(echo "$SSH_KEY")
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
+          ssh -p$SSH_PORT $SSH_USER@$SSH_HOST 'sudo docker login ${{ env.REGISTRY }} --username ${{ env.REGISTRY_USERNAME }} --password ${{ env.REGISTRY_PASSWORD }}'
+      - name: Remote Docker Pull
+        env:
+          TAG: ${{ needs.docker-tag-gen.outputs.docker_tag }}
+        run: |
+          eval $(ssh-agent -s)
+          ssh-add <(echo "$SSH_KEY")
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
+          ssh -p$SSH_PORT $SSH_USER@$SSH_HOST 'sudo docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}'
+      - name: Remote Docker Run
+        env:
+          TAG: ${{ needs.docker-tag-gen.outputs.docker_tag }}
+        run: |
+          eval $(ssh-agent -s)
+          ssh-add <(echo "$SSH_KEY")
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
+          ssh -p$SSH_PORT $SSH_USER@$SSH_HOST 'sudo docker run --name ${{ env.APP_NAME }} --rm -d ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }} -t ${{ env.TELEGRAM_TOKEN }}'

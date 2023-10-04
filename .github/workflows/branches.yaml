@@ -1,8 +1,8 @@
-name: Pipeline
+name: Pipeline Branches
 
 on:
   push:
-    branches: [ master ]
+    branches: [ '!master' ]
 
 env:
   APP_NAME: "nhl-recap"
@@ -99,39 +99,3 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-
-  deploy:
-    name: "Deploy Docker Image"
-    needs:
-      - docker-tag-gen
-      - docker-build-push
-    runs-on: ubuntu-latest
-    steps:
-      - name: Remote Docker Login
-        run: |
-          eval $(ssh-agent -s)
-          ssh-add <(echo "$SSH_KEY")
-          mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-          echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
-          ssh -p$SSH_PORT $SSH_USER@$SSH_HOST 'sudo docker login ${{ env.REGISTRY }} --username ${{ env.REGISTRY_USERNAME }} --password ${{ env.REGISTRY_PASSWORD }}'
-      - name: Remote Docker Pull
-        env:
-          TAG: ${{ needs.docker-tag-gen.outputs.docker_tag }}
-        run: |
-          eval $(ssh-agent -s)
-          ssh-add <(echo "$SSH_KEY")
-          mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-          echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
-          ssh -p$SSH_PORT $SSH_USER@$SSH_HOST 'sudo docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}'
-      - name: Remote Docker Run
-        env:
-          TAG: ${{ needs.docker-tag-gen.outputs.docker_tag }}
-        run: |
-          eval $(ssh-agent -s)
-          ssh-add <(echo "$SSH_KEY")
-          mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-          echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
-          ssh -p$SSH_PORT $SSH_USER@$SSH_HOST 'sudo docker run --name ${{ env.APP_NAME }} --rm -d ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }} -t ${{ env.TELEGRAM_TOKEN }}'
