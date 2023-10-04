@@ -95,7 +95,9 @@ jobs:
 
   deploy:
     name: "Deploy Docker Image"
-    needs: docker-build-push
+    needs:
+      - docker-tag-gen
+      - docker-build-push
     runs-on: ubuntu-latest
     steps:
       - name: Remote Docker Login
